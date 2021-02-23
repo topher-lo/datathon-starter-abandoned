@@ -1,0 +1,7 @@
+numpy
+pandas
+prefect
+statsmodels
+streamlit
+wheel
+flake8
