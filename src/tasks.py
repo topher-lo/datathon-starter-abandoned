@@ -45,9 +45,8 @@ For instance, the model assumptions of multiple linear regression
 (i.e. no multicollinearity) might not apply for another model
 (e.g. non-parametric models such as random forest).
 
-Note 3. The implementations in functions 13. and 14. are simple examples only.
-The boilerplate's users are very likely to write their own data tasks using
-their chosen ML library.
+Note 3. The implementations in functions 9. and 10. are simple examples only.
+Replace the code within these functions to according to your data model.
 """
 
 import datetime as dt
@@ -60,6 +59,7 @@ import statsmodels.api as sm
 from prefect import task
 from typing import List
 from typing import Union
+from typing import Mapping
 
 from matplotlib.axes import Axes
 
@@ -114,9 +114,13 @@ def _obj_wrangler(data: pd.DataFrame) -> pd.DataFrame:
     return data
 
 
-def _factor_wrangler(data: pd.DataFrame,
-                     is_factor: Union[None, List[str]]) -> pd.DataFrame:
+def _factor_wrangler(
+    data: pd.DataFrame,
+    is_factor: Union[None, List[str]],
+    categories: Union[None, Mapping[str, List[str, int, float]]]
+) -> pd.DataFrame:
     """Converts columns in `is_factor` to `CategoricalDtype` dtype.
+    TO DO: ordered / unordered AND set categories.
     """
     for col in is_factor:
         data.loc[:, col] = (data.loc[:, col]
