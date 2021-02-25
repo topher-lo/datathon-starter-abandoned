@@ -69,13 +69,19 @@ from statsmodels.regression.linear_model import OLSResults
 # Pre-processing
 
 @task(max_retries=3, retry_delay=dt.timedelta(seconds=10))
-def retrieve_data(url: str, sep: str = ',') -> pd.DataFrame:
+def retrieve_data(url: str,
+                  sep: str = ',',
+                  nrows: Union[None, int] = None) -> pd.DataFrame:
     """Reads data (from url string) into a DataFrame.
     Assumes download data is a text file (a.k.a flat file).
     `sep` defaults to ',' accept CSV files.
 
     If `sep` is specified as None, the separator is automatically
     detected using Python's builtin sniffer tool `csv.sniffer`.
+
+    `nrows` specifies the number of rows of the file to read. Useful
+    for examining the header without downloading the entire file, or
+    for reading pieces of large files.
 
     Note 1. pandas uses its super fast C engine to read flat files
     ONLY IF `sep` is explicitly given. Otherwise, it uses
@@ -86,8 +92,12 @@ def retrieve_data(url: str, sep: str = ',') -> pd.DataFrame:
     data formats. See https://pandas.pydata.org/pandas-docs/dev/user_guide/io.html
     for more information. Change the code within this function to retrieve data
     from sources other than CSV (e.g. data stored on a SQL database).
+
+    Note 3. ignores unnamed index columns.
     """
     data = pd.read_csv(url, sep=sep)
+    # Remove unnamed index columns
+    data = data.loc[:, ~data.columns.str.contains('Unnamed')]
     return data
 
 
@@ -117,7 +127,7 @@ def _obj_wrangler(data: pd.DataFrame) -> pd.DataFrame:
 def _factor_wrangler(
     data: pd.DataFrame,
     is_factor: Union[None, List[str]],
-    categories: Union[None, Mapping[str, List[str, int, float]]]
+    categories: Union[None, Mapping[str, List[Union[str, int, float]]]]
 ) -> pd.DataFrame:
     """Converts columns in `is_factor` to `CategoricalDtype` dtype.
     TO DO: ordered / unordered AND set categories.
@@ -140,7 +150,7 @@ def _check_model_assumptions(data: pd.DataFrame) -> pd.DataFrame:
 def clean_data(
     data: pd.DataFrame,
     is_factor: Union[None, List[str]] = None,
-    na_values: Union[None, List[str, float, int]] = None
+    na_values: Union[None, List[Union[str, int, float]]] = None
 ) -> pd.DataFrame:
     """Data preprocessing pipeline. Relaces values in `na_values`
     with `np.nan` and runs the following data wranglers on `data`:
@@ -179,6 +189,7 @@ def encode_data(data: pd.DataFrame, outcome_col: str) -> pd.DataFrame:
 
 # Modelling
 
+@task
 def run_model(data: pd.DataFrame,
               y: str,
               X: Union[str, List[str]]) -> OLSResults:
@@ -193,6 +204,7 @@ def run_model(data: pd.DataFrame,
 
 # Post-processing
 
+@task
 def plot_confidence_intervals(res: OLSResults,
                               palette: str = 'spectral') -> Axes:
     """Returns a matplotlib axes containing a box and whisker
