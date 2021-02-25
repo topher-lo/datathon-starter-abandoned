@@ -3,5 +3,6 @@ pandas
 prefect
 statsmodels
 streamlit
+streamlit-pandas-profiling
 wheel
 flake8

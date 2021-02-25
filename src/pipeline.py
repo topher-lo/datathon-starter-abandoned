@@ -5,15 +5,16 @@ proprocessing, to modelling, and lastly post-processing. Data workflows in
 
 from prefect import Flow
 from prefect import Parameter
-from tasks import retrieve_data
-from tasks import clean_data
-from tasks import transform_data
-from tasks import encode_data
-from tasks import run_model
-from tasks import plot_confidence_intervals
+from .tasks import retrieve_data
+from .tasks import clean_data
+from .tasks import transform_data
+from .tasks import encode_data
+from .tasks import run_model
+from .tasks import plot_confidence_intervals
 
 
 with Flow('e2e_pipeline') as e2e_pipeline:
+
     # Pipeline parameters
     url = Parameter('url', required=True)
     sep = Parameter('sep', default=',')
@@ -26,10 +27,10 @@ with Flow('e2e_pipeline') as e2e_pipeline:
     data = retrieve_data(url, sep)
     clean_data = clean_data(data, is_factor, na_values)
     transformed_data = transform_data(clean_data)
-    encoded_data = encode_data(transformed_data)
+    encoded_data = encode_data(transformed_data, endog)
 
     # Modelling
-    res = run_model(data, y=endog, X=exog)
+    res = run_model(encoded_data, y=endog, X=exog)
 
     # Postprocessing
     conf_int_plot = plot_confidence_intervals(res)
