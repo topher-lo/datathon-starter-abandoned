@@ -63,6 +63,7 @@ from typing import Mapping
 from .utils import clean_text
 
 from statsmodels.regression.linear_model import OLSResults
+from src.styles.altair import streamlit_theme
 
 
 # Pre-processing
@@ -232,6 +233,8 @@ def plot_confidence_intervals(res: OLSResults) -> str:
     For a full list of colour palettes in Seaborn, check out:
     medium.com/@morganjonesartist/color-guide-to-seaborn-palettes-da849406d44f
     """
+    alt.themes.register("streamlit", streamlit_theme)  # Enable custom theme
+    alt.themes.enable("streamlit")
     conf_int = res.conf_int()  # 95% C.I.
     # Stack lower and upper columns
     conf_int = conf_int.stack()
@@ -243,6 +246,9 @@ def plot_confidence_intervals(res: OLSResults) -> str:
     chart = alt.Chart(conf_int).mark_boxplot().encode(
         x='regressor:O',
         y='estimate:Q'
+    ).properties(
+        width=200,
+        height=500
     )
     return chart
 
