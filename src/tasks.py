@@ -101,6 +101,17 @@ def retrieve_data(url: str,
     return data
 
 
+def _replace_na(
+    data: pd.DataFrame,
+    na_values: Union[None, List[Union[str, int, float]]]
+) -> pd.DataFrame:
+    """Replaces values in `na_values` with `np.nan`.
+    """
+    if na_values:
+        data = data.replace(na_values, np.nan)
+    return data
+
+
 def _column_wrangler(data: pd.DataFrame) -> pd.DataFrame:
     """Returns DataFrame with columns transformed into a consistent format:
     1. Stripped of all whitespaces at start and end
@@ -159,7 +170,7 @@ def clean_data(
     3._factor_wrangler
     4. _check_model_assumptions
     """
-    data = (data.replace(na_values, np.nan)
+    data = (data.pipe(_replace_na, na_values=na_values)
                 .pipe(_column_wrangler)
                 .pipe(_obj_wrangler)
                 .pipe(_factor_wrangler, is_factor=is_factor)
