@@ -62,8 +62,7 @@ def sidebar():
 
     st.sidebar.subheader('Model Specification')
     st.success(f'Successfully loaded dataset: {dataset_item}')
-    st.info(f'URL found [here]({url}).')
-    st.info(f'Documentation found [here]({doc}).')
+    st.info(f'URL found [here]({url}). Documentation found [here]({doc}).')
 
     is_factor = st.sidebar.multiselect('Are there any categorical variables?',
                                        options=columns)
@@ -127,8 +126,8 @@ def main():
     item = kwargs.pop('item')
     title = DATASET_TITLES[item]
     st.subheader(f'{title}')
-    st.text('A random sample of 10 rows')
-    st.table(data.sample(10))  # View random sample of 10 rows
+    st.text('A random sample of 10 rows:')
+    st.table(data.sample(10))  # Display random sample as a static table
 
     # EDA
     col1, col2, col3 = st.beta_columns(3)
@@ -155,10 +154,26 @@ def main():
             st.warning('Please select an endogenous variable')
             st.stop()
         state = e2e_pipeline.run(**kwargs)
-        conf_int_plot = state.result.get('conf_int_plot')
-        # TODO: Check if all tasks were successfully executed
-        # # Plot confidence intervals
-        # st.pyplot(conf_int_plot)
+        state_msg = state.message  # Flow's outcome state's message
+        # List of each state's (name, state message) in the workflow
+        task_state_msgs = [(str(task), state.result[task].message) for task
+                           in state.result.keys()]
+        # Check if all tasks were successfully executed
+        if 'fail' in state_msg:
+            st.warning(state_msg)
+            st.subheader('Workflow logs')
+            st.text('Note: the tasks below are not ordered by their run order.'
+                    ' This will be fixed in a future version'
+                    ' of the boilerplate.')
+            task_state_table = (pd.DataFrame(task_state_msgs,
+                                             columns=['task', 'state message'])
+                                  .sort_values(by='task'))
+            st.table(task_state_table)
+        # If all tasks were successfully executed
+        else:
+            # Plot regression coefficient's confidence intervals
+            conf_int_plot = state.result.get('conf_int_plot')
+            st.pyplot(conf_int_plot)
 
 
 if __name__ == "__main__":
