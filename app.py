@@ -66,7 +66,8 @@ def sidebar():
 
     is_factor = st.sidebar.multiselect('Are there any categorical variables?',
                                        options=columns)
-    endog = st.sidebar.selectbox('Select an endogenous variable',
+    endog = st.sidebar.selectbox('Select an endogenous variable'
+                                 ' (must be numeric)',
                                  options=[None] + columns)
     exog = [col for col in columns if col != endog]
 

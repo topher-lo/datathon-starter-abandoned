@@ -138,13 +138,24 @@ def _obj_wrangler(data: pd.DataFrame) -> pd.DataFrame:
 def _factor_wrangler(
     data: pd.DataFrame,
     is_factor: Union[None, List[str]],
-    categories: Union[None, Mapping[str, List[Union[str, int, float]]]]
+    categories: Union[None, Mapping[str, List[Union[str, int, float]]]],
+    str_to_cat: bool,
 ) -> pd.DataFrame:
-    """Converts columns in `is_factor` to `CategoricalDtype` dtype.
+    """Converts columns in `is_factor` to `CategoricalDtype`.
+    If `str_to_cat` is set to True, converts all `StringDtype` columns
+    to `CategoricalDtype`.
     TODO: ordered / unordered AND set categories.
     """
+    cat_cols = []
+    if str_to_cat:
+        str_cols = (data.select_dtypes(include=['string'])
+                        .columns
+                        .tolist())
+        cat_cols += str_cols
     if is_factor:
-        for col in is_factor:
+        cat_cols += is_factor
+    if cat_cols:
+        for col in cat_cols:
             data.loc[:, col] = (data.loc[:, col]
                                     .astype('category'))
     return data
@@ -164,6 +175,7 @@ def clean_data(
     na_values: Union[None, List[Union[str, int, float]]] = None,
     is_factor: Union[None, List[str]] = None,
     categories: Union[None, Mapping[str, List[Union[str, int, float]]]] = None,
+    str_to_cat: bool = True,
 ) -> pd.DataFrame:
     """Data preprocessing pipeline. Relaces values in `na_values`
     with `np.nan` and runs the following data wranglers on `data`:
@@ -175,7 +187,7 @@ def clean_data(
     data = (data.pipe(_replace_na, na_values)
                 .pipe(_column_wrangler)
                 .pipe(_obj_wrangler)
-                .pipe(_factor_wrangler, is_factor, categories)
+                .pipe(_factor_wrangler, is_factor, categories, str_to_cat)
                 .pipe(_check_model_assumptions))
     return data
 
@@ -197,7 +209,7 @@ def encode_data(data: pd.DataFrame, outcome_col: str) -> pd.DataFrame:
     cat_cols = (data.select_dtypes(include=['category'])
                     .columns)
     if cat_cols.any():
-        data = data.get_dummies(columns=cat_cols, dummy_na=True)
+        data = pd.get_dummies(data, columns=cat_cols, dummy_na=True)
     return data
 
 
@@ -216,7 +228,9 @@ def run_model(data: pd.DataFrame,
     for dealing with NA.
     """
     y, X = clean_text(y), [clean_text(x) for x in X]
-    mod = sm.OLS(data[y], data[X], missing='drop')
+    X_with_dummies = [col for col in data.columns if col != y and
+                      any(x in col for x in X)]
+    mod = sm.OLS(data[y], data[X_with_dummies], missing='drop')
     res = mod.fit()
     return res
 
