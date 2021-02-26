@@ -33,7 +33,7 @@ with Flow('e2e_pipeline') as e2e_pipeline:
     res = run_model(encoded_data, y=endog, X=exog)
 
     # Postprocessing
-    conf_int_plot = plot_confidence_intervals(res)
+    conf_int_chart = plot_confidence_intervals(res)
 
 
 if __name__ == "__main__":

@@ -126,8 +126,8 @@ def main():
     item = kwargs.pop('item')
     title = DATASET_TITLES[item]
     st.subheader(f'{title}')
-    st.text('A random sample of 10 rows:')
-    st.table(data.sample(10))  # Display random sample as a static table
+    st.text('A random sample of 5 rows:')
+    st.table(data.sample(5))  # Display random sample as a static table
 
     # EDA
     col1, col2, col3 = st.beta_columns(3)
@@ -149,19 +149,20 @@ def main():
             st.pyplot(fig3)
     # Run data workflow
     if col3.button('✨ Run workflow!'):
+        st.write('---')
         # Stop execution until a valid endogenous variable is selected
         if not(kwargs.get('endog')):
             st.warning('Please select an endogenous variable')
             st.stop()
         state = e2e_pipeline.run(**kwargs)
         state_msg = state.message  # Flow's outcome state's message
-        # List of each state's (name, state message) in the workflow
-        task_state_msgs = [(str(task), state.result[task].message) for task
-                           in state.result.keys()]
         # Check if all tasks were successfully executed
         if 'fail' in state_msg:
+            # List of each state's (name, state message) in the workflow
+            task_state_msgs = [(str(task), state.result[task].message) for task
+                               in state.result.keys()]
             st.warning(state_msg)
-            st.subheader('Workflow logs')
+            st.subheader('Workflow Logs')
             st.text('Note: the tasks below are not ordered by their run order.'
                     ' This will be fixed in a future version'
                     ' of the boilerplate.')
@@ -171,9 +172,16 @@ def main():
             st.table(task_state_table)
         # If all tasks were successfully executed
         else:
+            st.success(state_msg)
+            st.subheader('Regression Results')
+            st.text('Dot and whisker plot of coefficients'
+                    ' and their confidence intervals:')
+            # Retrieve result value from prefect pipeline
+            task_name = 'plot_confidence_intervals'
+            task_ref = e2e_pipeline.get_tasks(name=task_name)[0]
+            conf_int_chart = state.result[task_ref].result
             # Plot regression coefficient's confidence intervals
-            conf_int_plot = state.result.get('conf_int_plot')
-            st.pyplot(conf_int_plot)
+            st.altair_chart(conf_int_chart, use_container_width=True)
 
 
 if __name__ == "__main__":

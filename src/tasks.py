@@ -49,10 +49,10 @@ Note 3. The implementations in functions 9. and 10. are simple examples only.
 Replace the code within these functions to according to your data model.
 """
 
+import altair as alt
 import datetime as dt
 import numpy as np
 import pandas as pd
-import seaborn as sns
 
 import statsmodels.api as sm
 
@@ -60,8 +60,7 @@ from prefect import task
 from typing import List
 from typing import Union
 from typing import Mapping
-
-from matplotlib.axes import Axes
+from .utils import clean_text
 
 from statsmodels.regression.linear_model import OLSResults
 
@@ -141,11 +140,12 @@ def _factor_wrangler(
     categories: Union[None, Mapping[str, List[Union[str, int, float]]]]
 ) -> pd.DataFrame:
     """Converts columns in `is_factor` to `CategoricalDtype` dtype.
-    TO DO: ordered / unordered AND set categories.
+    TODO: ordered / unordered AND set categories.
     """
-    for col in is_factor:
-        data.loc[:, col] = (data.loc[:, col]
-                                .astype('categorical'))
+    if is_factor:
+        for col in is_factor:
+            data.loc[:, col] = (data.loc[:, col]
+                                    .astype('category'))
     return data
 
 
@@ -160,8 +160,9 @@ def _check_model_assumptions(data: pd.DataFrame) -> pd.DataFrame:
 @task
 def clean_data(
     data: pd.DataFrame,
+    na_values: Union[None, List[Union[str, int, float]]] = None,
     is_factor: Union[None, List[str]] = None,
-    na_values: Union[None, List[Union[str, int, float]]] = None
+    categories: Union[None, Mapping[str, List[Union[str, int, float]]]] = None,
 ) -> pd.DataFrame:
     """Data preprocessing pipeline. Relaces values in `na_values`
     with `np.nan` and runs the following data wranglers on `data`:
@@ -170,10 +171,10 @@ def clean_data(
     3._factor_wrangler
     4. _check_model_assumptions
     """
-    data = (data.pipe(_replace_na, na_values=na_values)
+    data = (data.pipe(_replace_na, na_values)
                 .pipe(_column_wrangler)
                 .pipe(_obj_wrangler)
-                .pipe(_factor_wrangler, is_factor=is_factor)
+                .pipe(_factor_wrangler, is_factor, categories)
                 .pipe(_check_model_assumptions))
     return data
 
@@ -189,12 +190,13 @@ def transform_data(data: pd.DataFrame) -> pd.DataFrame:
 @task
 def encode_data(data: pd.DataFrame, outcome_col: str) -> pd.DataFrame:
     """Transforms columns (not `outcome_col`) with `category` dtype
-    using `pd.get_dummies`. Missing values for each categorical column
+    using `pd.get_dummies`. For each categorical variable, missing values
     are represented by their own dummy column.
     """
-    data = (data.select_dtypes(include=['categorical'])
-                .loc[:, ~outcome_col]
-                .get_dummies(dummy_na=True))
+    cat_cols = (data.select_dtypes(include=['category'])
+                    .columns)
+    if cat_cols.any():
+        data = data.get_dummies(columns=cat_cols, dummy_na=True)
     return data
 
 
@@ -207,8 +209,13 @@ def run_model(data: pd.DataFrame,
     """Runs a linear regression of y on X and returns
     a fitted OLS model in `statsmodels`. Replace the code
     within this function with your own model.
+
+    Missing value strategy: drop any observations with missing values.
+    TODO: implement a "NA wrangler" task in preprocessor with various methods
+    for dealing with NA.
     """
-    mod = sm.OLS(data[y], data[X])
+    y, X = clean_text(y), [clean_text(x) for x in X]
+    mod = sm.OLS(data[y], data[X], missing='drop')
     res = mod.fit()
     return res
 
@@ -216,8 +223,7 @@ def run_model(data: pd.DataFrame,
 # Post-processing
 
 @task
-def plot_confidence_intervals(res: OLSResults,
-                              palette: str = 'spectral') -> Axes:
+def plot_confidence_intervals(res: OLSResults) -> str:
     """Returns a matplotlib axes containing a box and whisker
     Seaborn plot of regression coefficients' point estimates and
     confidence intervals.
@@ -234,7 +240,11 @@ def plot_confidence_intervals(res: OLSResults,
     conf_int = (conf_int.reset_index()
                         .rename(columns={'level_0': 'regressor',
                                          'level_1': 'interval'}))
-    return sns.boxplot(x='regressor', y='estimate', data=conf_int)
+    chart = alt.Chart(conf_int).mark_boxplot().encode(
+        x='regressor:O',
+        y='estimate:Q'
+    )
+    return chart
 
 
 if __name__ == "__main__":
