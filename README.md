@@ -62,24 +62,39 @@ To build your own app, M=modify pre-existing code and implement empty functions:
 - Custom altair themes are found in `src/styles/altair.py`
 
 ## 🚀 A quick example
-In your virtual environment, run the following command from the streamlit-e2e-boilerplate directory
+In your virtual environment, run the following command from the `streamlit-e2e-boilerplate` dir:
 ```
 streamlit run app.py
 ```
-Then, the web app will be available at http://localhost:8501/
-If you are using docker, the web app will be available at whichever port you specified in the `.env` file.
+The web app will be available at http://localhost:8501/
+Otherwise, if you are using docker, the web app will be available at whichever port you specified in the `.env` file.
 
 ## 🗃️ Directory structure
 TODO
 
 ## Deployment
-- Heroku GH action
+To deploy to Heroku via Github actions, first generate a Heroku [API key](https://help.heroku.com/PBGP6IDE/how-should-i-generate-an-api-key-that-allows-me-to-use-the-heroku-platform-api). Save this key as `HEROKU_API_KEY` in your Github repo's [secrets](https://docs.github.com/en/actions/reference/encrypted-secrets). Second, create a Heroku app either via the [CLI](https://devcenter.heroku.com/articles/creating-apps) or the web-based [dashboard](https://devcenter.heroku.com/articles/heroku-dashboard). Save the name of your app as `HEROKU_APP_NAME` in your Github repo's secrets.
+
+Create a new branch from the main branch called `prod`:
+```
+git checkout main
+git branch prod
+git push origin prod
+```
+This branch is used for production. Any code that is pushed to this branch will be automatically deployed to Heroku. Note: I am looking to include multiple deployment strategies (e.g. AWS Elastic Beanstalk, Azure Container Registry) in future versions of the boilerplate.
 
 ## Roadmap
-- FastAPI
-- Category (ordered/unordered)
-- Missing values wrangler
-- Additional models (generalised linear models, lagged variables)
-- Prefect state handlers (e.g. send notification to slack)
+I will implement the following features depending on this repo's popularity (i.e. number of stars):
+- [5 stars] Introduce pandas's API for dealing with ordered and unordered categories
+- [10 stars] Implement a missing values wrangler (e.g. multiple imputation)
+- [25 stars] Implement additional baseline models (generalised linear models, random forest)
+- [50 stars] Separate out the backend (data tasks and workflow) into [FastAPI](https://github.com/tiangolo/fastapi) for other applications to call
+- [80 stars] Implement automated deployment to AWS Elastic Beanstalk and Azure Container Registry via Github Actions
 
 ## Contributing
+Found a bug? Wrote a patch? Want to add a new feature, suggest changes to the API, or improve the docs? Please checkout the brief [contribution guide](https://github.com/topher-lo/streamlit-e2e-boilerplate/blob/main/CONTRIBUTING.md). Any and all contributions are welcome. ❤️📊🙌
+
+## Getting in touch
+If you are having a problem with streamlit-e2e-boilerplate, please raise a GitHub issue. For anything else, you can reach me at: lochristopherhy@gmail.com
+
+
