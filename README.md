@@ -25,12 +25,14 @@
 
 ## Install
 streamlit-e2e-boilerplate has been tested with Python 3.8 and depends on the following packages:
-- `pandas`
-- `streamlit`
-- `prefect`
 - `altair`
+- `pandas`
+- `prefect`
 - `statsmodels`
+- `streamlit`
 - `streamlit-pandas-profiling`
+- `missingno`
+
 To use the boilerplate, you must first clone this repo:
 ```
 git clone git@github.com:topher-lo/streamlit-e2e-boilerplate.git
@@ -71,21 +73,22 @@ Otherwise, if you are using docker, the web app will be available at whichever p
 
 ## 🗃️ Directory structure
 ```
-├── app.py
-├── CONTRIBUTING.md
-├── docker-compose.yml
-├── Dockerfile
-├── LICENSE
-├── README.md
-├── requirements.txt
-└── src
-    ├── __init__.py
-    ├── pipeline.py
-    ├── styles
-    │   ├── altair.py
-    │   ├── __init__.py
-    ├── tasks.py
-    └── utils.py
+├── streamlit-e2e-boilerplate
+    ├── app.py
+    ├── CONTRIBUTING.md
+    ├── docker-compose.yml
+    ├── Dockerfile
+    ├── LICENSE
+    ├── README.md
+    ├── requirements.txt
+    └── src
+        ├── __init__.py
+        ├── pipeline.py
+        ├── styles
+        │   ├── altair.py
+        │   ├── __init__.py
+        ├── tasks.py
+        └── utils.py
 ```
 
 ## Deployment
