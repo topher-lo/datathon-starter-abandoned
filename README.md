@@ -70,7 +70,23 @@ The web app will be available at http://localhost:8501/
 Otherwise, if you are using docker, the web app will be available at whichever port you specified in the `.env` file.
 
 ## 🗃️ Directory structure
-TODO
+```
+├── app.py
+├── CONTRIBUTING.md
+├── docker-compose.yml
+├── Dockerfile
+├── LICENSE
+├── README.md
+├── requirements.txt
+└── src
+    ├── __init__.py
+    ├── pipeline.py
+    ├── styles
+    │   ├── altair.py
+    │   ├── __init__.py
+    ├── tasks.py
+    └── utils.py
+```
 
 ## Deployment
 To deploy to Heroku via Github actions, first generate a Heroku [API key](https://help.heroku.com/PBGP6IDE/how-should-i-generate-an-api-key-that-allows-me-to-use-the-heroku-platform-api). Save this key as `HEROKU_API_KEY` in your Github repo's [secrets](https://docs.github.com/en/actions/reference/encrypted-secrets). Second, create a Heroku app either via the [CLI](https://devcenter.heroku.com/articles/creating-apps) or the web-based [dashboard](https://devcenter.heroku.com/articles/heroku-dashboard). Save the name of your app as `HEROKU_APP_NAME` in your Github repo's secrets.
