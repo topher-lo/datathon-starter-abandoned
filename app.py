@@ -130,7 +130,7 @@ def main():
     st.text('A random sample of 5 rows:')
     st.table(data.sample(5))  # Display random sample as a static table
 
-    # EDA
+    # Column container for buttons
     col1, col2, col3 = st.beta_columns(3)
     # Data profiling
     if col1.button('🔬 Data profiling report'):
