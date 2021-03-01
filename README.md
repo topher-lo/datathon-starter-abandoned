@@ -34,24 +34,24 @@ streamlit-e2e-boilerplate has been tested with Python 3.8 and depends on the fol
 - `missingno`
 
 To use the boilerplate, you must first clone this repo:
-```
+```bash
 git clone git@github.com:topher-lo/streamlit-e2e-boilerplate.git
 cd [..path/to/repo]
 ```
 Then install its dependencies using either pip:
-```
+```bash
 python3 -m venv env
 source env/bin/activate
 pip3 install -r requirements.txt
 ```
-Or to run it as a containerised application using docker and docker-compose.
+Or run it as a containerised application using docker and docker-compose.
 First create a file `.env` with the line:
 ```
 PORT=8501
 ```
 to specify which port to publish the data app to.
 Then run the following commands on your CLI:
-```
+```bash
 docker-compose build
 docker-compose up -d
 ```
@@ -65,7 +65,7 @@ To build your own app, modify pre-existing code and implement empty functions:
 
 ## 🚀 A quick example
 In your virtual environment, run the following command from the `streamlit-e2e-boilerplate` dir:
-```
+```bash
 streamlit run app.py
 ```
 The web app will be available at http://localhost:8501/
@@ -95,7 +95,7 @@ Otherwise, if you are using docker, the web app will be available at whichever p
 To deploy to Heroku via Github actions, first generate a Heroku [API key](https://help.heroku.com/PBGP6IDE/how-should-i-generate-an-api-key-that-allows-me-to-use-the-heroku-platform-api). Save this key as `HEROKU_API_KEY` in your Github repo's [secrets](https://docs.github.com/en/actions/reference/encrypted-secrets). Second, create a Heroku app either via the [CLI](https://devcenter.heroku.com/articles/creating-apps) or the web-based [dashboard](https://devcenter.heroku.com/articles/heroku-dashboard). Save the name of your app as `HEROKU_APP_NAME` in your Github repo's secrets.
 
 Create a new branch from the main branch called `prod`:
-```
+```bash
 git checkout main
 git branch prod
 git push origin prod
