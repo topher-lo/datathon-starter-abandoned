@@ -5,6 +5,9 @@
 
 🛠️📊 Boilerplate code for an end-to-end data app using pandas, Streamlit, and Prefect.
 
+### Motivation
+I made this project with two aims. First, as starter code for my own data projects. Second, as a "learning-by-doing" project to gather and apply best-practices in pandas, data workflows, and statistics. As my work is primarily in causal machine learning, the boilerplate is slightly biased towards econometrics and user-driven data workflows. Nevertheless, by releasing this code, I hope it can be useful to others when they begin to build their own data app.
+
 ## ✨ Features
 - Boilerplate code for data tasks across the data pipeline (preprocessing, modelling, post-processing)
 - 5 common data tasks organised into individual functions (`retrieve_data`, `clean_data`, `transform_data`, `run_model`, and `plot_confidence_intervals`)
