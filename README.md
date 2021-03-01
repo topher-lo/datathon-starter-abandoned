@@ -57,7 +57,7 @@ docker-compose up -d
 ```
 
 ## 🏁 Getting started
-To build your own app, M=modify pre-existing code and implement empty functions:
+To build your own app, modify pre-existing code and implement empty functions:
 - Data tasks are found in `src/tasks.py`
 - Data workflows are found in `src/pipeline.py`
 - The Streamlit app's UI code is found in `app.py`
