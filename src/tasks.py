@@ -188,6 +188,7 @@ def clean_data(
     data: pd.DataFrame,
     na_values: Union[None, List[Union[str, int, float]]] = None,
     is_factor: Union[None, List[str]] = None,
+    is_ordered: Union[None, List[str]] = None,
     categories: Union[None, Mapping[str, List[Union[str, int, float]]]] = None,
     str_to_cat: bool = True,
 ) -> pd.DataFrame:
@@ -201,7 +202,11 @@ def clean_data(
     data = (data.pipe(_replace_na, na_values)
                 .pipe(_column_wrangler)
                 .pipe(_obj_wrangler)
-                .pipe(_factor_wrangler, is_factor, categories, str_to_cat)
+                .pipe(_factor_wrangler,
+                      is_factor,
+                      is_ordered,
+                      categories,
+                      str_to_cat)
                 .pipe(_check_model_assumptions))
     return data
 
