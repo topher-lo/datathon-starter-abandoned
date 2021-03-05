@@ -64,6 +64,7 @@ from .utils import clean_text
 
 from statsmodels.regression.linear_model import OLSResults
 from src.styles.altair import streamlit_theme
+from pandas.api.types import is_categorical_dtype
 
 
 # Pre-processing
@@ -220,15 +221,24 @@ def transform_data(data: pd.DataFrame) -> pd.DataFrame:
 
 
 @task
-def encode_data(data: pd.DataFrame, outcome_col: str) -> pd.DataFrame:
-    """Transforms columns (not `outcome_col`) with `category` dtype
-    using `pd.get_dummies`. For each categorical variable, missing values
+def encode_data(data: pd.DataFrame) -> pd.DataFrame:
+    """Transforms columns with unordered `category` dtype
+    using `pd.get_dummies`. Transforms columns with ordered `category`
+    dtype using `series.cat.codes`. For each categorical variable, missing values
     are represented by their own dummy column.
     """
-    cat_cols = (data.select_dtypes(include=['category'])
-                    .columns)
-    if cat_cols.any():
-        data = pd.get_dummies(data, columns=cat_cols, dummy_na=True)
+    unordered_mask = data.apply(lambda col: is_categorical_dtype(col) and
+                                not(col.cat.ordered))
+    ordered_mask = data.apply(lambda col: is_categorical_dtype(col) and
+                              col.cat.ordered)
+    unordered = (data.loc[:, unordered_mask]
+                     .columns)
+    ordered = (data.loc[:, ordered_mask]
+                   .columns)
+    if unordered.any():
+        data = pd.get_dummies(data, columns=unordered, dummy_na=True)
+    if ordered.any():
+        data.iloc[:, ordered] = data.iloc[:, ordered].cat.codes
     return data
 
 
