@@ -107,7 +107,6 @@ This branch is used for production. Any code that is pushed to this branch will 
 
 ## Roadmap
 I will implement the following features depending on this repo's popularity (i.e. number of stars):
-- [5 stars] Introduce pandas's API for dealing with ordered and unordered categories
 - [10 stars] Implement a missing values wrangler (e.g. multiple imputation)
 - [25 stars] Implement additional baseline models (generalised linear models, random forest)
 - [50 stars] Separate out the backend (data tasks and workflow) into [FastAPI](https://github.com/tiangolo/fastapi) for other applications to call
