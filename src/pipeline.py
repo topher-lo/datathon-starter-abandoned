@@ -27,7 +27,7 @@ with Flow('e2e_pipeline') as e2e_pipeline:
     data = retrieve_data(url, sep)
     clean_data = clean_data(data, is_factor, na_values)
     transformed_data = transform_data(clean_data)
-    encoded_data = encode_data(transformed_data, endog)
+    encoded_data = encode_data(transformed_data)
 
     # Modelling
     res = run_model(encoded_data, y=endog, X=exog)

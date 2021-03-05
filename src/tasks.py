@@ -64,6 +64,7 @@ from .utils import clean_text
 
 from statsmodels.regression.linear_model import OLSResults
 from src.styles.altair import streamlit_theme
+from pandas.api.types import is_categorical_dtype
 
 
 # Pre-processing
@@ -138,13 +139,15 @@ def _obj_wrangler(data: pd.DataFrame) -> pd.DataFrame:
 def _factor_wrangler(
     data: pd.DataFrame,
     is_factor: Union[None, List[str]],
-    categories: Union[None, Mapping[str, List[Union[str, int, float]]]],
-    str_to_cat: bool,
+    is_ordered: Union[None, List[str]],
+    categories: Union[None, Mapping[str, List[Union[str, int, float]]]] = None,
+    str_to_cat: bool = True,
 ) -> pd.DataFrame:
     """Converts columns in `is_factor` to `CategoricalDtype`.
     If `str_to_cat` is set to True, converts all `StringDtype` columns
-    to `CategoricalDtype`.
-    TODO: ordered / unordered AND set categories.
+    to `CategoricalDtype`. Sets columns in `is_ordered` to an ordered
+    category. For keys (column names) in `categories`, sets respective column's
+    categories to the key's corresponding value (list of str, int, or float).
     """
     cat_cols = []
     if str_to_cat:
@@ -158,6 +161,18 @@ def _factor_wrangler(
         for col in cat_cols:
             data.loc[:, col] = (data.loc[:, col]
                                     .astype('category'))
+    # Set categories
+    if categories:
+        for col, cats in categories.items():
+            data.loc[:, col] = (data.loc[:, col]
+                                    .cat
+                                    .set_categories(cats))
+    # Set is_ordered
+    if is_ordered:
+        for cat in is_ordered:
+            data.loc[:, col] = (data.loc[:, col]
+                                    .cat
+                                    .as_ordered())
     return data
 
 
@@ -174,6 +189,7 @@ def clean_data(
     data: pd.DataFrame,
     na_values: Union[None, List[Union[str, int, float]]] = None,
     is_factor: Union[None, List[str]] = None,
+    is_ordered: Union[None, List[str]] = None,
     categories: Union[None, Mapping[str, List[Union[str, int, float]]]] = None,
     str_to_cat: bool = True,
 ) -> pd.DataFrame:
@@ -187,7 +203,11 @@ def clean_data(
     data = (data.pipe(_replace_na, na_values)
                 .pipe(_column_wrangler)
                 .pipe(_obj_wrangler)
-                .pipe(_factor_wrangler, is_factor, categories, str_to_cat)
+                .pipe(_factor_wrangler,
+                      is_factor,
+                      is_ordered,
+                      categories,
+                      str_to_cat)
                 .pipe(_check_model_assumptions))
     return data
 
@@ -201,15 +221,24 @@ def transform_data(data: pd.DataFrame) -> pd.DataFrame:
 
 
 @task
-def encode_data(data: pd.DataFrame, outcome_col: str) -> pd.DataFrame:
-    """Transforms columns (not `outcome_col`) with `category` dtype
-    using `pd.get_dummies`. For each categorical variable, missing values
+def encode_data(data: pd.DataFrame) -> pd.DataFrame:
+    """Transforms columns with unordered `category` dtype
+    using `pd.get_dummies`. Transforms columns with ordered `category`
+    dtype using `series.cat.codes`. For each categorical variable, missing values
     are represented by their own dummy column.
     """
-    cat_cols = (data.select_dtypes(include=['category'])
-                    .columns)
-    if cat_cols.any():
-        data = pd.get_dummies(data, columns=cat_cols, dummy_na=True)
+    unordered_mask = data.apply(lambda col: is_categorical_dtype(col) and
+                                not(col.cat.ordered))
+    ordered_mask = data.apply(lambda col: is_categorical_dtype(col) and
+                              col.cat.ordered)
+    unordered = (data.loc[:, unordered_mask]
+                     .columns)
+    ordered = (data.loc[:, ordered_mask]
+                   .columns)
+    if unordered.any():
+        data = pd.get_dummies(data, columns=unordered, dummy_na=True)
+    if ordered.any():
+        data.iloc[:, ordered] = data.iloc[:, ordered].cat.codes
     return data
 
 
