@@ -138,13 +138,15 @@ def _obj_wrangler(data: pd.DataFrame) -> pd.DataFrame:
 def _factor_wrangler(
     data: pd.DataFrame,
     is_factor: Union[None, List[str]],
-    categories: Union[None, Mapping[str, List[Union[str, int, float]]]],
-    str_to_cat: bool,
+    is_ordered: Union[None, List[str]],
+    categories: Union[None, Mapping[str, List[Union[str, int, float]]]] = None,
+    str_to_cat: bool = True,
 ) -> pd.DataFrame:
     """Converts columns in `is_factor` to `CategoricalDtype`.
     If `str_to_cat` is set to True, converts all `StringDtype` columns
-    to `CategoricalDtype`.
-    TODO: ordered / unordered AND set categories.
+    to `CategoricalDtype`. Sets columns in `is_ordered` to an ordered
+    category. For keys (column names) in `categories`, sets respective column's
+    categories to the key's corresponding value (list of str, int, or float).
     """
     cat_cols = []
     if str_to_cat:
@@ -158,6 +160,18 @@ def _factor_wrangler(
         for col in cat_cols:
             data.loc[:, col] = (data.loc[:, col]
                                     .astype('category'))
+    # Set categories
+    if categories:
+        for col, cats in categories.items():
+            data.loc[:, col] = (data.loc[:, col]
+                                    .cat
+                                    .set_categories(cats))
+    # Set is_ordered
+    if is_ordered:
+        for cat in is_ordered:
+            data.loc[:, col] = (data.loc[:, col]
+                                    .cat
+                                    .as_ordered())
     return data
 
 
