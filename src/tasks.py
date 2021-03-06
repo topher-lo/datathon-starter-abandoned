@@ -27,13 +27,21 @@ transforms columns with `category` dtype
 using `pd.get_dummies`. NA values for each categorical column
 are represented by their own dummy column.
 
+9. `wrangle_na(data, method)`:
+wrangles missing values. 5 available strategies:
+- Complete case
+- Fill-in
+- Fill-in with indicators
+- Grand model
+- MICE
+
 --- Modelling ---
 
-9. `run_model(data, y, X)`: `statsmodels` linear regression implementation
+10. `run_model(data, y, X)`: `statsmodels` linear regression implementation
 
 --- Post-processing ---
 
-10. `plot_confidence_intervals(result)`: given a fitted OLS model in
+11. `plot_confidence_intervals(result)`: given a fitted OLS model in
 `statsmodels`, returns a box and whisker regression coefficient plot.
 
 Note 1. Public functions (i.e. functions without a leading underscore `_func`)
@@ -197,7 +205,7 @@ def clean_data(
     with `np.nan` and runs the following data wranglers on `data`:
     1. _column_wrangler
     2. _obj_wrangler
-    3._factor_wrangler
+    3. _factor_wrangler
     4. _check_model_assumptions
     """
     data = (data.pipe(_replace_na, na_values)
@@ -224,8 +232,10 @@ def transform_data(data: pd.DataFrame) -> pd.DataFrame:
 def encode_data(data: pd.DataFrame) -> pd.DataFrame:
     """Transforms columns with unordered `category` dtype
     using `pd.get_dummies`. Transforms columns with ordered `category`
-    dtype using `series.cat.codes`. For each categorical variable, missing values
-    are represented by their own dummy column.
+    dtype using `series.cat.codes`.
+
+    Note: missing values are ignored (i.e. it is represented by a
+    row of zeros for each categorical variable's dummy columns)
     """
     unordered_mask = data.apply(lambda col: is_categorical_dtype(col) and
                                 not(col.cat.ordered))
@@ -236,10 +246,40 @@ def encode_data(data: pd.DataFrame) -> pd.DataFrame:
     ordered = (data.loc[:, ordered_mask]
                    .columns)
     if unordered.any():
-        data = pd.get_dummies(data, columns=unordered, dummy_na=True)
+        data = pd.get_dummies(data, columns=unordered)
     if ordered.any():
         data.iloc[:, ordered] = data.iloc[:, ordered].cat.codes
     return data
+
+
+@task
+def wrangle_na(data: pd.DataFrame, method: str, **kwargs) -> pd.DataFrame:
+    """Wrangles missing values in `data` according to the
+    strategy specified in `method`.
+
+    Available strategies:
+    1. Complete case -- drops all missing values.
+
+    2. Fill-in -- imputes missing values using sklearn's `SimpleImputer`
+
+    3. Fill-in with indicators -- imputes missing values using
+    sklearn's `SimpleImputer`; creates indicator columns for patterns
+    of missing values across feature columns.
+
+    4. Fill-in with indicators and interactions (AKA grand model) --
+    imputes missing values using sklearn's `SimpleImputer`; creates indicator
+    columns akin to strategy 3; creates additional missing value indictor
+    columns for the complete set of interactions between the features.
+
+    5. Multiple imputation with chained equations --
+    performs MICE procedure. Returns each imputed dataset from N draws of
+    the original dataset.
+
+    Note: `**kwargs` contains required or optional keyword arguments for
+    `sklearn.preprocessing.SimpleImputer` and
+    `statsmodels.imputation.mice.MICEData`
+    """
+    pass
 
 
 # Modelling
@@ -253,8 +293,6 @@ def run_model(data: pd.DataFrame,
     within this function with your own model.
 
     Missing value strategy: drop any observations with missing values.
-    TODO: implement a "NA wrangler" task in preprocessor with various methods
-    for dealing with NA.
     """
     y, X = clean_text(y), [clean_text(x) for x in X]
     X_with_dummies = [col for col in data.columns if col != y and
