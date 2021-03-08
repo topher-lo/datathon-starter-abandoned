@@ -61,14 +61,18 @@ import altair as alt
 import datetime as dt
 import numpy as np
 import pandas as pd
+import itertools
 
 import statsmodels.api as sm
 
+from patsy import dmatrix
 from prefect import task
 from typing import List
 from typing import Union
 from typing import Mapping
 from .utils import clean_text
+
+from sklearn.impute import SimpleImputer
 
 from statsmodels.regression.linear_model import OLSResults
 from src.styles.altair import streamlit_theme
@@ -258,28 +262,89 @@ def wrangle_na(data: pd.DataFrame, method: str, **kwargs) -> pd.DataFrame:
     strategy specified in `method`.
 
     Available strategies:
-    1. Complete case -- drops all missing values.
+    1. Complete case (`cc`) -- drops all missing values.
 
-    2. Fill-in -- imputes missing values using sklearn's `SimpleImputer`
+    2. Fill-in (`fi`) -- imputes missing values using sklearn's `SimpleImputer`
 
-    3. Fill-in with indicators -- imputes missing values using
+    3. Fill-in with indicators (`fii`) -- imputes missing values using
     sklearn's `SimpleImputer`; creates indicator columns for patterns
     of missing values across feature columns.
 
-    4. Fill-in with indicators and interactions (AKA grand model) --
+    4. Fill-in with indicators and interactions (AKA grand model) (`gm`) --
     imputes missing values using sklearn's `SimpleImputer`; creates indicator
     columns akin to strategy 3; creates additional missing value indictor
-    columns for the complete set of interactions between the features.
+    columns for the complete set of interactions between features and the
+    missing value indactors.
 
-    5. Multiple imputation with chained equations --
+    5. Multiple imputation with chained equations (`mice`) --
     performs MICE procedure. Returns each imputed dataset from N draws of
     the original dataset.
 
-    Note: `**kwargs` contains required or optional keyword arguments for
+    Note 1. `**kwargs` contains required or optional keyword arguments for
     `sklearn.preprocessing.SimpleImputer` and
     `statsmodels.imputation.mice.MICEData`
+
+    Note 2. By default for `fi`, `fii`, and `gm`, missing values in numeric
+    columns are replaced by the mean along the column. For categorical columns,
+    missing values are replaced by the mode along the column.
     """
-    pass
+
+    # If complete case
+    if method == 'cc':
+        return data.dropna(**kwargs)
+
+    # If fill-in with indicators or grand model
+    if method in ['fii', 'gm']:
+        # Create indicator columns for patterns of na
+        na_indicators = (data.applymap(lambda x: '1' if pd.isna(x) else '0')
+                             .agg(''.join, axis=1)
+                             .pipe(pd.get_dummies)
+                             .add_prefix('na_'))
+        data = data.join(na_indicators)
+
+    # If fill-in (or related)
+    if method in ['fi',  'fii', 'gm']:
+        # If kwargs not specified
+        if not(kwargs):
+            kwargs = {'strategy': 'mean'}
+        # SimpleImputer (numeric columns)
+        numeric_cols = data.select_dtypes(include=[np.number]).columns
+        data.loc[:, numeric_cols] = (data.loc[:, numeric_cols]
+                                         .pipe(SimpleImputer(**kwargs)
+                                               .fit_transform))
+        # If kwargs not specified
+        if not(kwargs):
+            kwargs = {'strategy': 'most_frequent'}
+        # SimpleImputer (categorical columns)
+        cat_cols = data.select_dtypes(include=[np.number]).columns
+        data.loc[:, cat_cols] = (data.loc[:, numeric_cols]
+                                     .pipe(SimpleImputer(**kwargs)
+                                           .fit_transform)
+
+    # If grand model
+    if method == 'gm':
+        # Get interactions between features and na_indicators
+        na_cols = [col for col in data.columns if col.startswith('na_')]
+        feature_cols = [col for col in data.columns if col not in na_cols]
+        # Convert to non-nullable dtypes
+        temp_data = pd.DataFrame(data[feature_cols + na_cols]
+                                 .to_numpy()).infer_objects()
+        temp_data.columns = feature_cols + na_cols
+        # Get interactions
+        interaction_terms = ' + '.join(
+            [':'.join([f'Q("{t}")' t for terms]) for terms
+             in itertools.product(feature_cols, na_cols)]
+        ) + '-1'
+        interactions = dmatrix(interaction_terms,
+                               temp_data,
+                               return_type='dataframe')
+        data = data.join(interactions)
+
+    # If MICE
+    if method == 'mice':
+        pass
+
+    return data
 
 
 # Modelling
