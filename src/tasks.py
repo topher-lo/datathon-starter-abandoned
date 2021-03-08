@@ -356,13 +356,23 @@ def wrangle_na(data: pd.DataFrame, method: str, **kwargs) -> pd.DataFrame:
         imputer = MICEData(data, **kwargs)
         n_burnin = kwargs.get('n_burnin', 20)
         n_imputations = kwargs.get('n_imputations', 10)
-        n_spread = kwargs.
-        # Draw n_imputations
-        iteration = 0
-        for imputed_data in imputer:
+        n_spread = kwargs.get('n_spread', 20)
+        imputed_datasets = []
+        # Draw n_burnin + n_imputations + n_imputations * n_spread
+        # MICE iterations
+        for i in range(n_imputations + 1):
             if iteration = 0:
                 # Burn-in phase
-                imputer.update_all(n_iter=1)
+                imputer.update_all(n_iter=n_burnin)
+            else:
+                # Imputation phase
+                # Select final update after n_spread iterations
+                imputed_data = (imputer.update_all(n_iter=n_spread)
+                                       .data)
+                imputed_datasets.append(imputed_data)
+        data = pd.concat(imputed_datasets,
+                         keys=list(range(n_imputations)))
+        data.index = data.index.set_names(['iter', 'index'])
 
     return data
 
