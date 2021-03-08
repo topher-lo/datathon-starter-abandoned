@@ -11,6 +11,7 @@ from pandas_profiling import ProfileReport
 from streamlit_pandas_profiling import st_profile_report
 
 from src.pipeline import e2e_pipeline
+from src.pipeline import wrangle_na_pipeline
 
 
 R_DATASETS_URL = 'https://vincentarelbundock.github.io/Rdatasets'
@@ -70,11 +71,28 @@ def sidebar():
                                  ' (must be numeric)',
                                  options=[None] + columns)
     exog = [col for col in columns if col != endog]
-
+    na_strats = {
+        'Complete case': 'cc',
+        'Fill-in': 'fi',
+        'Fill-in with indicators': 'fii',
+        'Grand model': 'gm',
+        'MICE': 'mice',
+    }
+    na_strategy_name = st.sidebar.selectbox(
+        'How should missing values be dealt with?',
+        options=[
+          'Complete case',
+          'Fill-in',
+          'Fill-in with indicators',
+          'Grand model',
+          'MICE',
+    ])
+    na_strategy = na_strats[na_strategy_name]
     return {'url': url,
             'is_factor': is_factor,
             'endog': endog,
             'exog': exog,
+            'na_strategy': na_strategy,
             'data': data,
             'item': dataset_item}
 
@@ -131,7 +149,7 @@ def main():
     st.table(data.sample(5))  # Display random sample as a static table
 
     # Column container for buttons
-    col1, col2, col3 = st.beta_columns(3)
+    col1, col2, col3, col4 = st.beta_columns(4)
     # Data profiling
     if col1.button('🔬 Data profiling report'):
         profile_report = ProfileReport(data, explorative=True)
@@ -148,8 +166,22 @@ def main():
             st.pyplot(fig2)
             fig3 = msno.dendrogram(data).get_figure()
             st.pyplot(fig3)
+    # Missing value wrangler
+    if col3.button('🕵️ Wrangle NA values'):
+        # Check if there are any missing values
+        if pd.notna(data).all().all():
+            st.warning('No missing values in dataset')
+        else:
+            na_strategy = kwargs.get('na_strategy')
+            state = wrangle_na_pipeline.run(data=data,
+                                            na_strategy=na_strategy)
+            task_ref = wrangle_na_pipeline.get_tasks(name='wrangle_na')[0]
+            wrangled_data = state.result[task_ref].result
+            st.write('')  # Insert blank line
+            st.subheader('Wrangled Dataset')
+            st.dataframe(wrangled_data)
     # Run data workflow
-    if col3.button('✨ Run workflow!'):
+    if col4.button('✨ Run workflow!'):
         st.write('---')
         # Stop execution until a valid endogenous variable is selected
         if not(kwargs.get('endog')):
