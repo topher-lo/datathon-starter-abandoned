@@ -9,8 +9,15 @@ from .tasks import retrieve_data
 from .tasks import clean_data
 from .tasks import transform_data
 from .tasks import encode_data
+from .tasks import wrangle_na
 from .tasks import run_model
 from .tasks import plot_confidence_intervals
+
+
+with Flow('wrangle_na') as wrangle_na_pipeline:
+    data = Parameter('data', required=True)
+    na_strategy = Parameter('na_strategy', default='cc')
+    wrangled_data = wrangle_na(data, na_strategy)
 
 
 with Flow('e2e_pipeline') as e2e_pipeline:
@@ -20,6 +27,7 @@ with Flow('e2e_pipeline') as e2e_pipeline:
     sep = Parameter('sep', default=',')
     na_values = Parameter('na_values', default=None)
     is_factor = Parameter('is_factor', default=None)
+    na_strategy = Parameter('na_strategy', default='cc')
     endog = Parameter('endog', required=True)
     exog = Parameter('exog', required=True)
 
@@ -28,6 +36,10 @@ with Flow('e2e_pipeline') as e2e_pipeline:
     clean_data = clean_data(data, is_factor, na_values)
     transformed_data = transform_data(clean_data)
     encoded_data = encode_data(transformed_data)
+
+    # Missing value wrangler
+    if na_strategy:
+        encoded_data = wrangle_na(encoded_data, na_strategy)
 
     # Modelling
     res = run_model(encoded_data, y=endog, X=exog)
