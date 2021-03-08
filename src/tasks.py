@@ -75,6 +75,7 @@ from .utils import clean_text
 from sklearn.impute import SimpleImputer
 
 from statsmodels.regression.linear_model import OLSResults
+from statsmodels.imputation.mice import MICEData
 from src.styles.altair import streamlit_theme
 from pandas.api.types import is_categorical_dtype
 
@@ -250,9 +251,12 @@ def encode_data(data: pd.DataFrame) -> pd.DataFrame:
     ordered = (data.loc[:, ordered_mask]
                    .columns)
     if unordered.any():
-        data = pd.get_dummies(data, columns=unordered)
+        dummies = pd.get_dummies(data.loc[:, unordered]).astype('category')
+        data = data.join(dummies)
     if ordered.any():
-        data.iloc[:, ordered] = data.iloc[:, ordered].cat.codes
+        data.iloc[:, ordered] = (data.loc[:, ordered]
+                                     .apply(lambda x: x.cat.codes)
+                                     .astype('category'))
     return data
 
 
@@ -264,29 +268,36 @@ def wrangle_na(data: pd.DataFrame, method: str, **kwargs) -> pd.DataFrame:
     Available strategies:
     1. Complete case (`cc`) -- drops all missing values.
 
-    2. Fill-in (`fi`) -- imputes missing values using sklearn's `SimpleImputer`
+    2. Fill-in (`fi`) -- imputes missing values with `pd.fillna`
 
-    3. Fill-in with indicators (`fii`) -- imputes missing values using
-    sklearn's `SimpleImputer`; creates indicator columns for patterns
-    of missing values across feature columns.
+    3. Fill-in with indicators (`fii`) --
+    imputes missing values with `pd.fillna`; creates indicator columns
+    for patterns of missing values across feature columns.
 
     4. Fill-in with indicators and interactions (AKA grand model) (`gm`) --
-    imputes missing values using sklearn's `SimpleImputer`; creates indicator
+    imputes missing values with `pd.fillna`; creates indicator
     columns akin to strategy 3; creates additional missing value indictor
     columns for the complete set of interactions between features and the
     missing value indactors.
 
     5. Multiple imputation with chained equations (`mice`) --
     performs MICE procedure. Returns each imputed dataset from N draws of
-    the original dataset.
+    the original dataset. Optional arguments to specify in `kwargs`:
+    - `n_burnin` --
+    first `n_burnin` MICE iterations to skip; defaults to 20.
+    - `n_imputations` --
+    number of MICE iterations to save after burn-in phase; defaults to 10.
+    - `n_spread` --
+    number of MICE iterations to skip between saved imputations; defaults to 20.
 
     Note 1. `**kwargs` contains required or optional keyword arguments for
     `sklearn.preprocessing.SimpleImputer` and
-    `statsmodels.imputation.mice.MICEData`
+    `statsmodels.imputation.mice.MICEData`.
 
-    Note 2. By default for `fi`, `fii`, and `gm`, missing values in numeric
-    columns are replaced by the mean along the column. For categorical columns,
-    missing values are replaced by the mode along the column.
+    Note 2. By default for `fi`, `fii`, and `gm`, missing values in
+    non-categorical columns are replaced by the mean along the column.
+    Missing values in categorical columns are replaced by the most
+    frequent value along the column.
     """
 
     # If complete case
@@ -317,7 +328,7 @@ def wrangle_na(data: pd.DataFrame, method: str, **kwargs) -> pd.DataFrame:
             kwargs = {'strategy': 'most_frequent'}
         # SimpleImputer (categorical columns)
         cat_cols = data.select_dtypes(include=[np.number]).columns
-        data.loc[:, cat_cols] = (data.loc[:, numeric_cols]
+        data.loc[:, cat_cols] = (data.loc[:, cat_cols]
                                      .pipe(SimpleImputer(**kwargs)
                                            .fit_transform)
 
@@ -342,7 +353,16 @@ def wrangle_na(data: pd.DataFrame, method: str, **kwargs) -> pd.DataFrame:
 
     # If MICE
     if method == 'mice':
-        pass
+        imputer = MICEData(data, **kwargs)
+        n_burnin = kwargs.get('n_burnin', 20)
+        n_imputations = kwargs.get('n_imputations', 10)
+        n_spread = kwargs.
+        # Draw n_imputations
+        iteration = 0
+        for imputed_data in imputer:
+            if iteration = 0:
+                # Burn-in phase
+                imputer.update_all(n_iter=1)
 
     return data
 
