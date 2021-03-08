@@ -27,13 +27,21 @@ transforms columns with `category` dtype
 using `pd.get_dummies`. NA values for each categorical column
 are represented by their own dummy column.
 
+9. `wrangle_na(data, method)`:
+wrangles missing values. 5 available strategies:
+- Complete case
+- Fill-in
+- Fill-in with indicators
+- Grand model
+- MICE
+
 --- Modelling ---
 
-9. `run_model(data, y, X)`: `statsmodels` linear regression implementation
+10. `run_model(data, y, X)`: `statsmodels` linear regression implementation
 
 --- Post-processing ---
 
-10. `plot_confidence_intervals(result)`: given a fitted OLS model in
+11. `plot_confidence_intervals(result)`: given a fitted OLS model in
 `statsmodels`, returns a box and whisker regression coefficient plot.
 
 Note 1. Public functions (i.e. functions without a leading underscore `_func`)
@@ -53,16 +61,21 @@ import altair as alt
 import datetime as dt
 import numpy as np
 import pandas as pd
+import itertools
 
 import statsmodels.api as sm
 
+from patsy import dmatrix
 from prefect import task
 from typing import List
 from typing import Union
 from typing import Mapping
 from .utils import clean_text
 
+from sklearn.impute import SimpleImputer
+
 from statsmodels.regression.linear_model import OLSResults
+from statsmodels.imputation.mice import MICEData
 from src.styles.altair import streamlit_theme
 from pandas.api.types import is_categorical_dtype
 
@@ -197,7 +210,7 @@ def clean_data(
     with `np.nan` and runs the following data wranglers on `data`:
     1. _column_wrangler
     2. _obj_wrangler
-    3._factor_wrangler
+    3. _factor_wrangler
     4. _check_model_assumptions
     """
     data = (data.pipe(_replace_na, na_values)
@@ -224,8 +237,10 @@ def transform_data(data: pd.DataFrame) -> pd.DataFrame:
 def encode_data(data: pd.DataFrame) -> pd.DataFrame:
     """Transforms columns with unordered `category` dtype
     using `pd.get_dummies`. Transforms columns with ordered `category`
-    dtype using `series.cat.codes`. For each categorical variable, missing values
-    are represented by their own dummy column.
+    dtype using `series.cat.codes`.
+
+    Note: missing values are ignored (i.e. it is represented by a
+    row of zeros for each categorical variable's dummy columns)
     """
     unordered_mask = data.apply(lambda col: is_categorical_dtype(col) and
                                 not(col.cat.ordered))
@@ -236,9 +251,138 @@ def encode_data(data: pd.DataFrame) -> pd.DataFrame:
     ordered = (data.loc[:, ordered_mask]
                    .columns)
     if unordered.any():
-        data = pd.get_dummies(data, columns=unordered, dummy_na=True)
+        dummies = pd.get_dummies(data.loc[:, unordered]).astype('category')
+        data = data.join(dummies)
     if ordered.any():
-        data.iloc[:, ordered] = data.iloc[:, ordered].cat.codes
+        data.loc[:, ordered] = (data.loc[:, ordered]
+                                    .apply(lambda x: x.cat.codes)
+                                    .astype('category'))
+    return data
+
+
+@task
+def wrangle_na(data: pd.DataFrame, strategy: str, **kwargs) -> pd.DataFrame:
+    """Wrangles missing values in `data` according to the
+    strategy specified in `method`.
+
+    Available strategies:
+    1. Complete case (`cc`) -- drops all missing values.
+
+    2. Fill-in (`fi`) -- imputes missing values with `pd.fillna`
+
+    3. Fill-in with indicators (`fii`) --
+    imputes missing values with `pd.fillna`; creates indicator columns
+    for patterns of missing values across feature columns.
+
+    4. Fill-in with indicators and interactions (AKA grand model) (`gm`) --
+    imputes missing values with `pd.fillna`; creates indicator
+    columns akin to strategy 3; creates additional missing value indictor
+    columns for the complete set of interactions between features and the
+    missing value indactors.
+
+    5. Multiple imputation with chained equations (`mice`) --
+    performs MICE procedure. Returns each imputed dataset from N draws of
+    the original dataset. Optional arguments to specify in `kwargs`:
+    - `n_burnin` --
+    first `n_burnin` MICE iterations to skip; defaults to 20.
+    - `n_imputations` --
+    number of MICE iterations to save after burn-in phase; defaults to 10.
+    - `n_spread` --
+    number of MICE iterations to skip between saved imputations; defaults to 20.
+
+    Note 1. `**kwargs` contains required or optional keyword arguments for
+    `sklearn.preprocessing.SimpleImputer` and
+    `statsmodels.imputation.mice.MICEData`.
+
+    Note 2. By default for `fi`, `fii`, and `gm`, missing values in
+    non-categorical columns are replaced by the mean along the column.
+    Missing values in categorical columns are replaced by the most
+    frequent value along the column.
+    """
+
+    # If complete case
+    if strategy == 'cc':
+        data = data.dropna(**kwargs)
+
+    # If fill-in with indicators or grand model
+    if strategy in ['fii', 'gm']:
+        # Create indicator columns for patterns of na
+        na_indicators = (data.applymap(lambda x: '1' if pd.isna(x) else '0')
+                             .agg(''.join, axis=1)
+                             .pipe(pd.get_dummies)
+                             .add_prefix('na_'))
+        data = data.join(na_indicators)
+
+    # If fill-in (or related)
+    if strategy in ['fi',  'fii', 'gm']:
+        # If kwargs not specified
+        if not(kwargs):
+            kwargs = {'strategy': 'mean'}
+        # SimpleImputer (numeric columns)
+        numeric_cols = data.select_dtypes(include=[np.number]).columns
+        data.loc[:, numeric_cols] = (data.loc[:, numeric_cols]
+                                         .pipe(SimpleImputer(**kwargs)
+                                               .fit_transform))
+        # If kwargs not specified
+        if not(kwargs):
+            kwargs = {'strategy': 'most_frequent'}
+        # SimpleImputer (categorical columns)
+        cat_cols = data.select_dtypes(include=[np.number]).columns
+        data.loc[:, cat_cols] = (data.loc[:, cat_cols]
+                                     .pipe(SimpleImputer(**kwargs)
+                                           .fit_transform))
+
+    # If grand model
+    if strategy == 'gm':
+        # Get interactions between features and na_indicators
+        na_cols = [col for col in data.columns if col.startswith('na_')]
+        feature_cols = [col for col in data.columns if col not in na_cols]
+        # Convert to non-nullable dtypes
+        temp_data = pd.DataFrame(data[feature_cols + na_cols]
+                                 .to_numpy()).infer_objects()
+        temp_data.columns = feature_cols + na_cols
+        # Get interactions
+        interaction_terms = list(itertools.product(feature_cols, na_cols))
+        interaction_formula = ' + '.join(
+            ['Q("{}"):Q("{}")'.format(*term) for term
+             in interaction_terms]
+        ) + '-1'
+        interactions = dmatrix(interaction_formula,
+                               temp_data,
+                               return_type='dataframe')
+        data = data.join(interactions)
+
+    # If MICE
+    if strategy == 'mice':
+        # Label encode columns
+        column_codes = pd.Categorical(data.columns)
+        # Dictionary codes label
+        col_code_map = dict(enumerate(column_codes.categories))
+        # Rename columns to standardized terms for patsy
+        data.columns = [f'col{c}' for c in column_codes.codes]
+        imputer = MICEData(data, **kwargs)
+        n_burnin = kwargs.get('n_burnin', 20)
+        n_imputations = kwargs.get('n_imputations', 10)
+        n_spread = kwargs.get('n_spread', 20)
+        imputed_datasets = []
+        # Draw n_burnin + n_imputations + n_imputations * n_spread
+        # MICE iterations
+        for i in range(n_imputations + 1):
+            if i == 0:
+                # Burn-in phase
+                imputer.update_all(n_iter=n_burnin)
+            else:
+                # Imputation phase
+                # Select final update after n_spread iterations
+                imputer.update_all(n_iter=n_spread)
+                imputed_datasets.append(imputer.data)
+        data = pd.concat(imputed_datasets,
+                         keys=list(range(n_imputations)))
+        data.index = data.index.set_names(['iter', 'index'])
+        # Inverse label encode columns
+        data.columns = [col_code_map[int(c[3:])] for c
+                        in data.columns]
+
     return data
 
 
@@ -253,8 +397,6 @@ def run_model(data: pd.DataFrame,
     within this function with your own model.
 
     Missing value strategy: drop any observations with missing values.
-    TODO: implement a "NA wrangler" task in preprocessor with various methods
-    for dealing with NA.
     """
     y, X = clean_text(y), [clean_text(x) for x in X]
     X_with_dummies = [col for col in data.columns if col != y and
