@@ -27,6 +27,7 @@ with Flow('e2e_pipeline') as e2e_pipeline:
     sep = Parameter('sep', default=',')
     na_values = Parameter('na_values', default=None)
     is_factor = Parameter('is_factor', default=None)
+    cols_transf = Parameter('cols_transf', default=None)
     na_strategy = Parameter('na_strategy', default='cc')
     endog = Parameter('endog', required=True)
     exog = Parameter('exog', required=True)
@@ -34,7 +35,7 @@ with Flow('e2e_pipeline') as e2e_pipeline:
     # Preprocessing
     data = retrieve_data(url, sep)
     clean_data = clean_data(data, is_factor, na_values)
-    transformed_data = transform_data(clean_data)
+    transformed_data = transform_data(clean_data, cols_transf)
     encoded_data = encode_data(transformed_data)
 
     # Missing value wrangler
