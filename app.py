@@ -67,6 +67,10 @@ def sidebar():
 
     is_factor = st.sidebar.multiselect('Are there any categorical variables?',
                                        options=columns)
+    cols_transf = st.sidebar.multiselect('Select columns to transform',
+                                         options=columns)
+    tranf = st.sidebar.selectbox('Log or arcsinh transform?',
+                                 options=['log', 'arcsinh'])
     endog = st.sidebar.selectbox('Select an endogenous variable'
                                  ' (must be numeric)',
                                  options=[None] + columns)
@@ -85,8 +89,8 @@ def sidebar():
           'Fill-in',
           'Fill-in with indicators',
           'Grand model',
-          'MICE',
-    ])
+          'MICE'
+        ])
     na_strategy = na_strats[na_strategy_name]
     return {'url': url,
             'is_factor': is_factor,

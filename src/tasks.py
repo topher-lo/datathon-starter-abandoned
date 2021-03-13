@@ -228,31 +228,24 @@ def clean_data(
 @task
 def transform_data(
     data: pd.DataFrame,
-    cols_transf: Union[None, Mapping[str, List[str]]] = None
+    cols: Union[None, List[str]] = None,
+    transf: str = 'arcsinh',
 ) -> pd.DataFrame:
-    """Transforms columns according to specified transformation.
+    """Transforms columns in `cols` according to specified transformation.
     Transformations available:
     - `log` -- Log transform
     - `arcsinh` -- Inverse hyperbolic sine transform
 
-    The argument `cols_transf is a mapping of column names to list
-    of transformation names (e.g. `log`). Single or multiple transformations
-    can be specified in the list. Transformations in the list are applied
-    in order from left to right.
+    Raises:
+        ValueError: if `cols` in `data` contain zero values
     """
 
-    transforms = {
+    funcs = {
         'log': np.log,
         'arcsinh': np.arcsinh,
     }
 
-    def apply_transforms(x):
-        for t in method[x.name]:
-            x = transforms[t](x)
-        return x
-
-    if method:
-        data = data.apply(lambda x: apply_transforms(x))
+    data = data.apply(lambda x: funcs[transf](x))
     return data
 
 
