@@ -162,6 +162,12 @@ def _factor_wrangler(
     category. For keys (column names) in `categories`, sets respective column's
     categories to the key's corresponding value (list of str, int, or float).
     """
+    if is_factor:
+        is_factor = [clean_text(col) for col in is_factor]
+    if is_ordered:
+        is_ordered = [clean_text(col) for col in is_ordered]
+    if categories:
+        categories = {clean_text(k): v for k, v in categories.items()}
     cat_cols = []
     if str_to_cat:
         str_cols = (data.select_dtypes(include=['string'])
@@ -247,8 +253,8 @@ def transform_data(
 
     if cols:
         cols = [clean_text(col) for col in cols]
-        data = (data.loc[:, cols]
-                    .apply(lambda x: funcs[transf](x)))
+        data.loc[:, cols] = (data.loc[:, cols]
+                                 .apply(lambda x: funcs[transf](x)))
     return data
 
 
