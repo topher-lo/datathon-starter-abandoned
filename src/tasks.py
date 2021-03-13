@@ -20,7 +20,7 @@ converts columns in `is_factor` into `CategoricalDtype`
 6. `clean_data(data, is_factor, na_values)`:
 a pandas pipeline of data wranglers
 
-7. `transform_data(data)`: empty function
+7. `transform_data(data)`: applies transformations on data
 
 8. `encode_data(data)`:
 transforms columns with `category` dtype
@@ -226,10 +226,27 @@ def clean_data(
 
 
 @task
-def transform_data(data: pd.DataFrame) -> pd.DataFrame:
-    """To be implemented. Consider rescaling and log (or arcsine)
-    transforming your data in this function.
+def transform_data(
+    data: pd.DataFrame,
+    method: Union[None, Mapping[str, List[str]]]
+) -> pd.DataFrame:
+    """Transforms columns according to specified methods.
+    Methods available:
+    - `log` -- Log transform
+    - `arcsinh` -- Inverse hyperbolic sine transform
     """
+
+    transforms = {
+        'log': np.log,
+        'arcsinh': np.arcsinh,
+    }
+
+    def apply_transforms(x):
+        for t in method[x.name]:
+            x = transforms[t](x)
+        return x
+
+    data = data.apply(lambda x: apply_transforms(x))
     return data
 
 
