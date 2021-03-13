@@ -245,34 +245,10 @@ def transform_data(
         'arcsinh': np.arcsinh,
     }
 
-    data = data.apply(lambda x: funcs[transf](x))
-    return data
-
-
-@task
-def encode_data(data: pd.DataFrame) -> pd.DataFrame:
-    """Transforms columns with unordered `category` dtype
-    using `pd.get_dummies`. Transforms columns with ordered `category`
-    dtype using `series.cat.codes`.
-
-    Note: missing values are ignored (i.e. it is represented by a
-    row of zeros for each categorical variable's dummy columns)
-    """
-    unordered_mask = data.apply(lambda col: is_categorical_dtype(col) and
-                                not(col.cat.ordered))
-    ordered_mask = data.apply(lambda col: is_categorical_dtype(col) and
-                              col.cat.ordered)
-    unordered = (data.loc[:, unordered_mask]
-                     .columns)
-    ordered = (data.loc[:, ordered_mask]
-                   .columns)
-    if unordered.any():
-        dummies = pd.get_dummies(data.loc[:, unordered]).astype('category')
-        data = data.join(dummies)
-    if ordered.any():
-        data.loc[:, ordered] = (data.loc[:, ordered]
-                                    .apply(lambda x: x.cat.codes)
-                                    .astype('category'))
+    if cols:
+        cols = [clean_text(col) for col in cols]
+        data = (data.loc[:, cols]
+                    .apply(lambda x: funcs[transf](x)))
     return data
 
 
@@ -316,6 +292,10 @@ def wrangle_na(data: pd.DataFrame, strategy: str, **kwargs) -> pd.DataFrame:
     frequent value along the column.
     """
 
+    # If no missing values
+    if pd.notna(data).all().all():
+        return data
+
     # If complete case
     if strategy == 'cc':
         data = data.dropna(**kwargs)
@@ -331,18 +311,18 @@ def wrangle_na(data: pd.DataFrame, strategy: str, **kwargs) -> pd.DataFrame:
 
     # If fill-in (or related)
     if strategy in ['fi',  'fii', 'gm']:
+        # SimpleImputer (numeric columns)
         # If kwargs not specified
         if not(kwargs):
             kwargs = {'strategy': 'mean'}
-        # SimpleImputer (numeric columns)
         numeric_cols = data.select_dtypes(include=[np.number]).columns
         data.loc[:, numeric_cols] = (data.loc[:, numeric_cols]
                                          .pipe(SimpleImputer(**kwargs)
                                                .fit_transform))
+        # SimpleImputer (categorical columns)
         # If kwargs not specified
         if not(kwargs):
             kwargs = {'strategy': 'most_frequent'}
-        # SimpleImputer (categorical columns)
         cat_cols = data.select_dtypes(include=[np.number]).columns
         data.loc[:, cat_cols] = (data.loc[:, cat_cols]
                                      .pipe(SimpleImputer(**kwargs)
@@ -398,7 +378,33 @@ def wrangle_na(data: pd.DataFrame, strategy: str, **kwargs) -> pd.DataFrame:
         # Inverse label encode columns
         data.columns = [col_code_map[int(c[3:])] for c
                         in data.columns]
+    return data
 
+
+@task
+def encode_data(data: pd.DataFrame) -> pd.DataFrame:
+    """Transforms columns with unordered `category` dtype
+    using `pd.get_dummies`. Transforms columns with ordered `category`
+    dtype using `series.cat.codes`.
+
+    Note: missing values are ignored (i.e. it is represented by a
+    row of zeros for each categorical variable's dummy columns)
+    """
+    unordered_mask = data.apply(lambda col: is_categorical_dtype(col) and
+                                not(col.cat.ordered))
+    ordered_mask = data.apply(lambda col: is_categorical_dtype(col) and
+                              col.cat.ordered)
+    unordered = (data.loc[:, unordered_mask]
+                     .columns)
+    ordered = (data.loc[:, ordered_mask]
+                   .columns)
+    if unordered.any():
+        dummies = pd.get_dummies(data.loc[:, unordered])
+        data = (data.loc[:, ~data.columns.isin(unordered)]
+                    .join(dummies))
+    if ordered.any():
+        data.loc[:, ordered] = (data.loc[:, ordered]
+                                    .apply(lambda x: x.cat.codes))
     return data
 
 

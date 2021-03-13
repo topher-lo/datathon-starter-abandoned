@@ -210,6 +210,12 @@ def main():
         # If all tasks were successfully executed
         else:
             st.success(state_msg)
+            st.subheader('Encoded Data')
+            # Retrieve wrangled data from prefect pipeline
+            task_name = 'encode_data'
+            task_ref = e2e_pipeline.get_tasks(name=task_name)[0]
+            encoded_data = state.result[task_ref].result
+            st.dataframe(encoded_data)
             st.subheader('Regression Results')
             st.text('Dot and whisker plot of coefficients'
                     ' and their confidence intervals:')
