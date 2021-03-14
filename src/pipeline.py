@@ -25,21 +25,19 @@ with Flow('e2e_pipeline') as e2e_pipeline:
     # Pipeline parameters
     url = Parameter('url', required=True)
     sep = Parameter('sep', default=',')
-    na_values = Parameter('na_values', default=None)
     is_factor = Parameter('is_factor', default=None)
     na_strategy = Parameter('na_strategy', default='cc')
+    cols_transf = Parameter('cols_transf', default=None)
+    transf = Parameter('transf', default=None)
     endog = Parameter('endog', required=True)
     exog = Parameter('exog', required=True)
 
     # Preprocessing
     data = retrieve_data(url, sep)
-    clean_data = clean_data(data, is_factor, na_values)
-    transformed_data = transform_data(clean_data)
-    encoded_data = encode_data(transformed_data)
-
-    # Missing value wrangler
-    if na_strategy:
-        encoded_data = wrangle_na(encoded_data, na_strategy)
+    clean_data = clean_data(data, is_factor=is_factor)
+    transformed_data = transform_data(clean_data, cols_transf, transf)
+    wrangled_data = wrangle_na(transformed_data, na_strategy)
+    encoded_data = encode_data(wrangled_data)
 
     # Modelling
     res = run_model(encoded_data, y=endog, X=exog)

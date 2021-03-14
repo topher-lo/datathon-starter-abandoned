@@ -67,6 +67,10 @@ def sidebar():
 
     is_factor = st.sidebar.multiselect('Are there any categorical variables?',
                                        options=columns)
+    cols_transf = st.sidebar.multiselect('Select columns to transform',
+                                         options=columns)
+    transf = st.sidebar.selectbox('Log or arcsinh transform?',
+                                 options=['log', 'arcsinh'])
     endog = st.sidebar.selectbox('Select an endogenous variable'
                                  ' (must be numeric)',
                                  options=[None] + columns)
@@ -85,11 +89,13 @@ def sidebar():
           'Fill-in',
           'Fill-in with indicators',
           'Grand model',
-          'MICE',
-    ])
+          'MICE'
+        ])
     na_strategy = na_strats[na_strategy_name]
     return {'url': url,
             'is_factor': is_factor,
+            'cols_transf': cols_transf,
+            'transf': transf,
             'endog': endog,
             'exog': exog,
             'na_strategy': na_strategy,
@@ -206,6 +212,12 @@ def main():
         # If all tasks were successfully executed
         else:
             st.success(state_msg)
+            st.subheader('Encoded Data')
+            # Retrieve wrangled data from prefect pipeline
+            task_name = 'encode_data'
+            task_ref = e2e_pipeline.get_tasks(name=task_name)[0]
+            encoded_data = state.result[task_ref].result
+            st.dataframe(encoded_data)
             st.subheader('Regression Results')
             st.text('Dot and whisker plot of coefficients'
                     ' and their confidence intervals:')
