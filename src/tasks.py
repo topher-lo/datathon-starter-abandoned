@@ -20,7 +20,7 @@ converts columns in `is_factor` into `CategoricalDtype`
 6. `clean_data(data, is_factor, na_values)`:
 a pandas pipeline of data wranglers
 
-7. `transform_data(data)`: empty function
+7. `transform_data(data)`: applies transformations on data
 
 8. `encode_data(data)`:
 transforms columns with `category` dtype
@@ -162,6 +162,12 @@ def _factor_wrangler(
     category. For keys (column names) in `categories`, sets respective column's
     categories to the key's corresponding value (list of str, int, or float).
     """
+    if is_factor:
+        is_factor = [clean_text(col) for col in is_factor]
+    if is_ordered:
+        is_ordered = [clean_text(col) for col in is_ordered]
+    if categories:
+        categories = {clean_text(k): v for k, v in categories.items()}
     cat_cols = []
     if str_to_cat:
         str_cols = (data.select_dtypes(include=['string'])
@@ -226,37 +232,29 @@ def clean_data(
 
 
 @task
-def transform_data(data: pd.DataFrame) -> pd.DataFrame:
-    """To be implemented. Consider rescaling and log (or arcsine)
-    transforming your data in this function.
+def transform_data(
+    data: pd.DataFrame,
+    cols: Union[None, List[str]] = None,
+    transf: str = 'arcsinh',
+) -> pd.DataFrame:
+    """Transforms columns in `cols` according to specified transformation.
+    Transformations available:
+    - `log` -- Log transform
+    - `arcsinh` -- Inverse hyperbolic sine transform
+
+    Raises:
+        ValueError: if `cols` in `data` contain zero values
     """
-    return data
 
+    funcs = {
+        'log': np.log,
+        'arcsinh': np.arcsinh,
+    }
 
-@task
-def encode_data(data: pd.DataFrame) -> pd.DataFrame:
-    """Transforms columns with unordered `category` dtype
-    using `pd.get_dummies`. Transforms columns with ordered `category`
-    dtype using `series.cat.codes`.
-
-    Note: missing values are ignored (i.e. it is represented by a
-    row of zeros for each categorical variable's dummy columns)
-    """
-    unordered_mask = data.apply(lambda col: is_categorical_dtype(col) and
-                                not(col.cat.ordered))
-    ordered_mask = data.apply(lambda col: is_categorical_dtype(col) and
-                              col.cat.ordered)
-    unordered = (data.loc[:, unordered_mask]
-                     .columns)
-    ordered = (data.loc[:, ordered_mask]
-                   .columns)
-    if unordered.any():
-        dummies = pd.get_dummies(data.loc[:, unordered]).astype('category')
-        data = data.join(dummies)
-    if ordered.any():
-        data.loc[:, ordered] = (data.loc[:, ordered]
-                                    .apply(lambda x: x.cat.codes)
-                                    .astype('category'))
+    if cols:
+        cols = [clean_text(col) for col in cols]
+        data.loc[:, cols] = (data.loc[:, cols]
+                                 .apply(lambda x: funcs[transf](x)))
     return data
 
 
@@ -300,6 +298,10 @@ def wrangle_na(data: pd.DataFrame, strategy: str, **kwargs) -> pd.DataFrame:
     frequent value along the column.
     """
 
+    # If no missing values
+    if pd.notna(data).all().all():
+        return data
+
     # If complete case
     if strategy == 'cc':
         data = data.dropna(**kwargs)
@@ -315,18 +317,18 @@ def wrangle_na(data: pd.DataFrame, strategy: str, **kwargs) -> pd.DataFrame:
 
     # If fill-in (or related)
     if strategy in ['fi',  'fii', 'gm']:
+        # SimpleImputer (numeric columns)
         # If kwargs not specified
         if not(kwargs):
             kwargs = {'strategy': 'mean'}
-        # SimpleImputer (numeric columns)
         numeric_cols = data.select_dtypes(include=[np.number]).columns
         data.loc[:, numeric_cols] = (data.loc[:, numeric_cols]
                                          .pipe(SimpleImputer(**kwargs)
                                                .fit_transform))
+        # SimpleImputer (categorical columns)
         # If kwargs not specified
         if not(kwargs):
             kwargs = {'strategy': 'most_frequent'}
-        # SimpleImputer (categorical columns)
         cat_cols = data.select_dtypes(include=[np.number]).columns
         data.loc[:, cat_cols] = (data.loc[:, cat_cols]
                                      .pipe(SimpleImputer(**kwargs)
@@ -382,7 +384,33 @@ def wrangle_na(data: pd.DataFrame, strategy: str, **kwargs) -> pd.DataFrame:
         # Inverse label encode columns
         data.columns = [col_code_map[int(c[3:])] for c
                         in data.columns]
+    return data
 
+
+@task
+def encode_data(data: pd.DataFrame) -> pd.DataFrame:
+    """Transforms columns with unordered `category` dtype
+    using `pd.get_dummies`. Transforms columns with ordered `category`
+    dtype using `series.cat.codes`.
+
+    Note: missing values are ignored (i.e. it is represented by a
+    row of zeros for each categorical variable's dummy columns)
+    """
+    unordered_mask = data.apply(lambda col: is_categorical_dtype(col) and
+                                not(col.cat.ordered))
+    ordered_mask = data.apply(lambda col: is_categorical_dtype(col) and
+                              col.cat.ordered)
+    unordered = (data.loc[:, unordered_mask]
+                     .columns)
+    ordered = (data.loc[:, ordered_mask]
+                   .columns)
+    if unordered.any():
+        dummies = pd.get_dummies(data.loc[:, unordered])
+        data = (data.loc[:, ~data.columns.isin(unordered)]
+                    .join(dummies))
+    if ordered.any():
+        data.loc[:, ordered] = (data.loc[:, ordered]
+                                    .apply(lambda x: x.cat.codes))
     return data
 
 
