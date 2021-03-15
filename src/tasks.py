@@ -403,13 +403,16 @@ def transform_data(
     - `arcsinh` -- Inverse hyperbolic sine transform
 
     Raises:
-        ValueError: if `cols` in `data` contain zero values
+        ValueError: if `cols` in `data` contain zero values and `transf`
+        specified as `log`.
     """
 
     funcs = {
         'log': np.log,
         'arcsinh': np.arcsinh,
     }
+    if transf == 'log' and (data.loc[:, cols] == 0).any().any():
+        raise ValueError('Dataset contains zero values. Cannot take logs.')
 
     if cols:
         cols = [clean_text(col) for col in cols]
