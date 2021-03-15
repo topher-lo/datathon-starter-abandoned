@@ -106,10 +106,8 @@ git push origin prod
 This branch is used for production. Any code that is pushed to this branch will be automatically deployed to Heroku. Note: I am looking to include multiple deployment strategies (e.g. AWS Elastic Beanstalk, Azure Container Registry) in future versions of the boilerplate.
 
 ## Roadmap
-I will implement the following features depending on this repo's popularity (i.e. number of stars):
-- [25 stars] Implement additional baseline models (generalised linear models, random forest)
-- [50 stars] Separate out the backend (data tasks and workflow) into [FastAPI](https://github.com/tiangolo/fastapi) for other applications to call
-- [80 stars] Implement automated deployment to AWS Elastic Beanstalk and Azure Container Registry via Github Actions
+- Separate out the backend (data tasks and workflow) into [FastAPI](https://github.com/tiangolo/fastapi) for other applications to call
+- Implement automated deployment to AWS Elastic Beanstalk, Digital Ocean, and Azure Container Registry via Github Actions
 
 ## Contributing
 Found a bug? Wrote a patch? Want to add a new feature, suggest changes to the API, or improve the docs? Please checkout the brief [contribution guide](https://github.com/topher-lo/streamlit-e2e-boilerplate/blob/main/CONTRIBUTING.md). Any and all contributions are welcome. ❤️📊🙌
