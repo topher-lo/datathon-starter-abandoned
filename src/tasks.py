@@ -439,7 +439,7 @@ def encode_data(data: pd.DataFrame) -> pd.DataFrame:
     ordered = (data.loc[:, ordered_mask]
                    .columns)
     if unordered.any():
-        dummies = pd.get_dummies(data.loc[:, unordered])
+        dummies = pd.get_dummies(data.loc[:, unordered]).astype('boolean')
         data = (data.loc[:, ~data.columns.isin(unordered)]
                     .join(dummies))
     if ordered.any():
