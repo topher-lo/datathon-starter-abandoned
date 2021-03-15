@@ -75,14 +75,14 @@ def sidebar():
                                  ' (must be numeric)',
                                  options=[None] + columns)
     exog = [col for col in columns if col != endog]
-    na_strats = {
+    na_methods = {
         'Complete case': 'cc',
         'Fill-in': 'fi',
         'Fill-in with indicators': 'fii',
         'Grand model': 'gm',
         'MICE': 'mice',
     }
-    na_strategy_name = st.sidebar.selectbox(
+    na_method_name = st.sidebar.selectbox(
         'How should missing values be dealt with?',
         options=[
           'Complete case',
@@ -97,7 +97,7 @@ def sidebar():
         'Missing, missing, not found'
     )
     na_values = [s.strip() for s in na_values_string.split(',')]
-    na_strategy = na_strats[na_strategy_name]
+    na_method = na_methods[na_method_name]
     return {'url': url,
             'is_cat': is_cat,
             'cols_transf': cols_transf,
@@ -105,7 +105,7 @@ def sidebar():
             'endog': endog,
             'exog': exog,
             'na_values': na_values,
-            'na_strategy': na_strategy,
+            'na_method': na_method,
             'data': data,
             'item': dataset_item}
 
