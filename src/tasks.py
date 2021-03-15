@@ -448,6 +448,20 @@ def encode_data(data: pd.DataFrame) -> pd.DataFrame:
     return data
 
 
+@task
+def gelman_standardize_data(data: pd.DataFrame):
+    """Standardize data by dividing by 2 standard deviations and
+    mean-centering them. Boolean columns are ignored.
+    """
+    mask = (data.select_dtypes(include=['boolean'])
+                .columns)
+    data.loc[:, ~mask] = (
+        data.loc[:, ~mask].apply(lambda x: x - x.mean())  # Subtract mean
+                          .apply(lambda x: x / (2*x.std()))  # Divide by 2 sd
+    )
+    return data
+
+
 # Modelling
 
 @task
