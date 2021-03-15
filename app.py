@@ -65,7 +65,7 @@ def sidebar():
     st.success(f'Successfully loaded dataset: {dataset_item}')
     st.info(f'URL found [here]({url}). Documentation found [here]({doc}).')
 
-    is_factor = st.sidebar.multiselect('Are there any categorical variables?',
+    is_cat = st.sidebar.multiselect('Are there any categorical variables?',
                                        options=columns)
     cols_transf = st.sidebar.multiselect('Select columns to transform',
                                          options=columns)
@@ -91,13 +91,20 @@ def sidebar():
           'Grand model',
           'MICE'
         ])
+    na_values_string = st.sidebar.text_input(
+        'Are there any text values that should be recognised as NA?'
+        ' (separate values with a comma)',
+        'Missing, missing, not found'
+    )
+    na_values = [s.strip() for s in na_values_string.split(',')]
     na_strategy = na_strats[na_strategy_name]
     return {'url': url,
-            'is_factor': is_factor,
+            'is_cat': is_cat,
             'cols_transf': cols_transf,
             'transf': transf,
             'endog': endog,
             'exog': exog,
+            'na_values': na_values,
             'na_strategy': na_strategy,
             'data': data,
             'item': dataset_item}
