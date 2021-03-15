@@ -20,20 +20,20 @@ converts columns in `is_cat` into `CategoricalDtype`
 6. `clean_data`:
 a pandas pipeline of data wranglers
 
-7. `transform_data`: applies transformations on data
-
-8. `encode_data`:
-transforms columns with `category` dtype
-using `pd.get_dummies`. NA values for each categorical column
-are represented by their own dummy column.
-
-9. `wrangle_na`:
+7. `wrangle_na`:
 wrangles missing values. 5 available strategies:
 - Complete case
 - Fill-in
 - Fill-in with indicators
 - Grand model
 - MICE
+
+8. `transform_data`: applies transformations on data
+
+9. `encode_data`:
+transforms columns with `category` dtype
+using `pd.get_dummies`. NA values for each categorical column
+are represented by their own dummy column.
 
 --- Modelling ---
 
@@ -245,33 +245,6 @@ def clean_data(
 
 
 @task
-def transform_data(
-    data: pd.DataFrame,
-    cols: Union[None, List[str]] = None,
-    transf: str = 'arcsinh',
-) -> pd.DataFrame:
-    """Transforms columns in `cols` according to specified transformation.
-    Transformations available:
-    - `log` -- Log transform
-    - `arcsinh` -- Inverse hyperbolic sine transform
-
-    Raises:
-        ValueError: if `cols` in `data` contain zero values
-    """
-
-    funcs = {
-        'log': np.log,
-        'arcsinh': np.arcsinh,
-    }
-
-    if cols:
-        cols = [clean_text(col) for col in cols]
-        data.loc[:, cols] = (data.loc[:, cols]
-                                 .apply(lambda x: funcs[transf](x)))
-    return data
-
-
-@task
 def wrangle_na(data: pd.DataFrame,
                method: str,
                cols: Union[None, List[str]] = None,
@@ -415,6 +388,33 @@ def wrangle_na(data: pd.DataFrame,
         # Inverse label encode columns
         data.columns = [col_code_map[int(c[3:])] for c
                         in data.columns]
+    return data
+
+
+@task
+def transform_data(
+    data: pd.DataFrame,
+    cols: Union[None, List[str]] = None,
+    transf: str = 'arcsinh',
+) -> pd.DataFrame:
+    """Transforms columns in `cols` according to specified transformation.
+    Transformations available:
+    - `log` -- Log transform
+    - `arcsinh` -- Inverse hyperbolic sine transform
+
+    Raises:
+        ValueError: if `cols` in `data` contain zero values
+    """
+
+    funcs = {
+        'log': np.log,
+        'arcsinh': np.arcsinh,
+    }
+
+    if cols:
+        cols = [clean_text(col) for col in cols]
+        data.loc[:, cols] = (data.loc[:, cols]
+                                 .apply(lambda x: funcs[transf](x)))
     return data
 
 

@@ -35,10 +35,10 @@ with Flow('e2e_pipeline') as e2e_pipeline:
 
     # Preprocessing
     data = retrieve_data(url, sep)
-    clean_data = clean_data(data, na_values, is_cat)
-    transformed_data = transform_data(clean_data, cols_transf, transf)
-    wrangled_data = wrangle_na(transformed_data, na_method)
-    encoded_data = encode_data(wrangled_data)
+    cleaned_data = clean_data(data, na_values, is_cat)
+    wrangled_data = wrangle_na(cleaned_data, na_method)
+    transformed_data = transform_data(wrangled_data, cols_transf, transf)
+    encoded_data = encode_data(transformed_data)
 
     # Modelling
     res = run_model(encoded_data, y=endog, X=exog)
