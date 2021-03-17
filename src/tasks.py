@@ -3,31 +3,31 @@ encapsulated into the following functions:
 
 --- Preprocessing ---
 
-1. `retrieve_data(url, sep)`: retrieves data from a url, returns data
+1. `retrieve_data`: retrieves data from a url, returns data
 as a DataFrame
 
-2. `_column_wrangler(data)`: transforms column names
+2. `_column_wrangler`: transforms column names
 into a consistent format
 
-3. `_obj_wrangler(data)`: converts columns with
+3. `_obj_wrangler`: converts columns with
 `object` dtype into `StringDtype`
 
-4. `_factor_wrangler(data, is_factor)`:
-converts columns in `is_factor` into `CategoricalDtype`
+4. `_factor_wrangler`:
+converts columns in `is_cat` into `CategoricalDtype`
 
-5. `_check_model_assumptions(data)`: empty function
+5. `_check_model_assumptions`: empty function
 
-6. `clean_data(data, is_factor, na_values)`:
+6. `clean_data`:
 a pandas pipeline of data wranglers
 
-7. `transform_data(data)`: applies transformations on data
+7. `transform_data`: applies transformations on data
 
-8. `encode_data(data)`:
+8. `encode_data`:
 transforms columns with `category` dtype
 using `pd.get_dummies`. NA values for each categorical column
 are represented by their own dummy column.
 
-9. `wrangle_na(data, method)`:
+9. `wrangle_na`:
 wrangles missing values. 5 available strategies:
 - Complete case
 - Fill-in
@@ -37,11 +37,11 @@ wrangles missing values. 5 available strategies:
 
 --- Modelling ---
 
-10. `run_model(data, y, X)`: `statsmodels` linear regression implementation
+10. `run_model`: `statsmodels` linear regression implementation
 
 --- Post-processing ---
 
-11. `plot_confidence_intervals(result)`: given a fitted OLS model in
+11. `plot_confidence_intervals`: given a fitted OLS model in
 `statsmodels`, returns a box and whisker regression coefficient plot.
 
 Note 1. Public functions (i.e. functions without a leading underscore `_func`)
@@ -151,43 +151,53 @@ def _obj_wrangler(data: pd.DataFrame) -> pd.DataFrame:
 
 def _factor_wrangler(
     data: pd.DataFrame,
-    is_factor: Union[None, List[str]],
+    is_cat: Union[None, List[str]],
     is_ordered: Union[None, List[str]],
     categories: Union[None, Mapping[str, List[Union[str, int, float]]]] = None,
     str_to_cat: bool = True,
+    dummy_to_bool: bool = True,
 ) -> pd.DataFrame:
-    """Converts columns in `is_factor` to `CategoricalDtype`.
+    """Converts columns in `is_cat` to `CategoricalDtype`.
     If `str_to_cat` is set to True, converts all `StringDtype` columns
-    to `CategoricalDtype`. Sets columns in `is_ordered` to an ordered
-    category. For keys (column names) in `categories`, sets respective column's
-    categories to the key's corresponding value (list of str, int, or float).
+    to `CategoricalDtype`.If `dummy_to_bool` is True, converts all columns
+    with integer [0, 1] values into BooleanDtype.
+    Sets columns in `is_ordered` to an orderer category. For keys
+    (column names) in `categories`, sets respective column's categories
+    to the key's corresponding value (list of str, int, or float).
     """
-    if is_factor:
-        is_factor = [clean_text(col) for col in is_factor]
-    if is_ordered:
-        is_ordered = [clean_text(col) for col in is_ordered]
-    if categories:
-        categories = {clean_text(k): v for k, v in categories.items()}
+
     cat_cols = []
     if str_to_cat:
         str_cols = (data.select_dtypes(include=['string'])
                         .columns
                         .tolist())
         cat_cols += str_cols
-    if is_factor:
-        cat_cols += is_factor
+    if dummy_to_bool:
+        # Select columns with [0, 1] values only
+        dummy_cols = (data.loc[:, data.select_dtypes(include=['integer'])
+                                      .apply(pd.Series.unique)
+                                      .apply(sum) == 1])
+        # Convert dummy_cols into BooleanDtype
+        data.loc[:, dummy_cols] = data.loc[:, dummy_cols].astype('boolean')
+
+    if is_cat:
+        is_cat = [clean_text(col) for col in is_cat]  # Clean col names
+        cat_cols += is_cat
     if cat_cols:
         for col in cat_cols:
             data.loc[:, col] = (data.loc[:, col]
                                     .astype('category'))
     # Set categories
     if categories:
+        # Clean col names
+        categories = {clean_text(k): v for k, v in categories.items()}
         for col, cats in categories.items():
             data.loc[:, col] = (data.loc[:, col]
                                     .cat
                                     .set_categories(cats))
     # Set is_ordered
     if is_ordered:
+        is_ordered = [clean_text(col) for col in is_ordered]  # Clean col names
         for cat in is_ordered:
             data.loc[:, col] = (data.loc[:, col]
                                     .cat
@@ -207,23 +217,26 @@ def _check_model_assumptions(data: pd.DataFrame) -> pd.DataFrame:
 def clean_data(
     data: pd.DataFrame,
     na_values: Union[None, List[Union[str, int, float]]] = None,
-    is_factor: Union[None, List[str]] = None,
+    is_cat: Union[None, List[str]] = None,
     is_ordered: Union[None, List[str]] = None,
     categories: Union[None, Mapping[str, List[Union[str, int, float]]]] = None,
     str_to_cat: bool = True,
 ) -> pd.DataFrame:
     """Data preprocessing pipeline. Relaces values in `na_values`
     with `np.nan` and runs the following data wranglers on `data`:
-    1. _column_wrangler
-    2. _obj_wrangler
-    3. _factor_wrangler
-    4. _check_model_assumptions
+    1. convert_dtypes
+    2. _replace_na
+    3. _column_wrangler
+    4. _obj_wrangler
+    5. _factor_wrangler
+    6. _check_model_assumptions
     """
-    data = (data.pipe(_replace_na, na_values)
+    data = (data.convert_dtypes()
+                .pipe(_replace_na, na_values)
                 .pipe(_column_wrangler)
                 .pipe(_obj_wrangler)
                 .pipe(_factor_wrangler,
-                      is_factor,
+                      is_cat,
                       is_ordered,
                       categories,
                       str_to_cat)
@@ -259,21 +272,24 @@ def transform_data(
 
 
 @task
-def wrangle_na(data: pd.DataFrame, strategy: str, **kwargs) -> pd.DataFrame:
+def wrangle_na(data: pd.DataFrame,
+               method: str,
+               cols: Union[None, List[str]] = None,
+               **kwargs) -> pd.DataFrame:
     """Wrangles missing values in `data` according to the
     strategy specified in `method`.
 
-    Available strategies:
+    Available methods:
     1. Complete case (`cc`) -- drops all missing values.
 
-    2. Fill-in (`fi`) -- imputes missing values with `pd.fillna`
+    2. Fill-in (`fi`) -- imputes missing values with sklearn's `SimpleImputer`
 
     3. Fill-in with indicators (`fii`) --
-    imputes missing values with `pd.fillna`; creates indicator columns
-    for patterns of missing values across feature columns.
+    imputes missing values with sklearn's `SimpleImputer`; creates indicator
+    columns for patterns of missing values across feature columns.
 
     4. Fill-in with indicators and interactions (AKA grand model) (`gm`) --
-    imputes missing values with `pd.fillna`; creates indicator
+    imputes missing values with sklearn's `SimpleImputer`; creates indicator
     columns akin to strategy 3; creates additional missing value indictor
     columns for the complete set of interactions between features and the
     missing value indactors.
@@ -303,11 +319,11 @@ def wrangle_na(data: pd.DataFrame, strategy: str, **kwargs) -> pd.DataFrame:
         return data
 
     # If complete case
-    if strategy == 'cc':
+    if method == 'cc':
         data = data.dropna(**kwargs)
 
     # If fill-in with indicators or grand model
-    if strategy in ['fii', 'gm']:
+    if method in ['fii', 'gm']:
         # Create indicator columns for patterns of na
         na_indicators = (data.applymap(lambda x: '1' if pd.isna(x) else '0')
                              .agg(''.join, axis=1)
@@ -316,26 +332,41 @@ def wrangle_na(data: pd.DataFrame, strategy: str, **kwargs) -> pd.DataFrame:
         data = data.join(na_indicators)
 
     # If fill-in (or related)
-    if strategy in ['fi',  'fii', 'gm']:
+    if method in ['fi',  'fii', 'gm']:
         # SimpleImputer (numeric columns)
         # If kwargs not specified
         if not(kwargs):
-            kwargs = {'strategy': 'mean'}
-        numeric_cols = data.select_dtypes(include=[np.number]).columns
-        data.loc[:, numeric_cols] = (data.loc[:, numeric_cols]
-                                         .pipe(SimpleImputer(**kwargs)
-                                               .fit_transform))
-        # SimpleImputer (categorical columns)
-        # If kwargs not specified
-        if not(kwargs):
-            kwargs = {'strategy': 'most_frequent'}
-        cat_cols = data.select_dtypes(include=[np.number]).columns
-        data.loc[:, cat_cols] = (data.loc[:, cat_cols]
+            # SimpleImputer (floats)
+            float_kwargs = {'strategy': 'mean'}
+            float_cols = data.select_dtypes(include=['float']).columns
+            data.loc[:, float_cols] = (
+                data.loc[:, float_cols].pipe(SimpleImputer(**float_kwargs)
+                                             .fit_transform))
+            # SimpleImputer (integer)
+            int_kwargs = {'strategy': 'median'}
+            int_cols = data.select_dtypes(include=['integer']).columns
+            data.loc[:, int_cols] = (
+                data.loc[:, int_cols].pipe(SimpleImputer(**int_kwargs)
+                                           .fit_transform))
+            # SimpleImputer (categorical and boolean columns)
+            fact_kwargs = {'strategy': 'most_frequent'}
+            fact_cols = (data.select_dtypes(include=['category', 'boolean'])
+                             .columns)
+            data.loc[:, fact_cols] = (
+                data.loc[:, fact_cols].pipe(SimpleImputer(**fact_kwargs)
+                                            .fit_transform))
+
+        # If kwargs and cols specified
+        elif kwargs and cols:
+            data.loc[:, cols] = (data.loc[:, cols]
                                      .pipe(SimpleImputer(**kwargs)
                                            .fit_transform))
+        # If kwargs specified
+        else:
+            data = data.pipe(SimpleImputer(**kwargs).fit_transform)
 
     # If grand model
-    if strategy == 'gm':
+    if method == 'gm':
         # Get interactions between features and na_indicators
         na_cols = [col for col in data.columns if col.startswith('na_')]
         feature_cols = [col for col in data.columns if col not in na_cols]
@@ -355,7 +386,7 @@ def wrangle_na(data: pd.DataFrame, strategy: str, **kwargs) -> pd.DataFrame:
         data = data.join(interactions)
 
     # If MICE
-    if strategy == 'mice':
+    if method == 'mice':
         # Label encode columns
         column_codes = pd.Categorical(data.columns)
         # Dictionary codes label
@@ -423,13 +454,11 @@ def run_model(data: pd.DataFrame,
     """Runs a linear regression of y on X and returns
     a fitted OLS model in `statsmodels`. Replace the code
     within this function with your own model.
-
-    Missing value strategy: drop any observations with missing values.
     """
     y, X = clean_text(y), [clean_text(x) for x in X]
     X_with_dummies = [col for col in data.columns if col != y and
                       any(x in col for x in X)]
-    mod = sm.OLS(data[y], data[X_with_dummies], missing='drop')
+    mod = sm.OLS(data[y], data[X_with_dummies])
     res = mod.fit()
     return res
 
