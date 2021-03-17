@@ -25,8 +25,9 @@ with Flow('e2e_pipeline') as e2e_pipeline:
     # Pipeline parameters
     url = Parameter('url', required=True)
     sep = Parameter('sep', default=',')
-    is_factor = Parameter('is_factor', default=None)
-    na_strategy = Parameter('na_strategy', default='cc')
+    is_cat = Parameter('is_cat', default=None)
+    na_values = Parameter('na_values', default=None)
+    na_method = Parameter('na_method', default='cc')
     cols_transf = Parameter('cols_transf', default=None)
     transf = Parameter('transf', default=None)
     endog = Parameter('endog', required=True)
@@ -34,9 +35,9 @@ with Flow('e2e_pipeline') as e2e_pipeline:
 
     # Preprocessing
     data = retrieve_data(url, sep)
-    clean_data = clean_data(data, is_factor=is_factor)
+    clean_data = clean_data(data, na_values, is_cat)
     transformed_data = transform_data(clean_data, cols_transf, transf)
-    wrangled_data = wrangle_na(transformed_data, na_strategy)
+    wrangled_data = wrangle_na(transformed_data, na_method)
     encoded_data = encode_data(wrangled_data)
 
     # Modelling
