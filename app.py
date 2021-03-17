@@ -65,7 +65,7 @@ def sidebar():
     st.success(f'Successfully loaded dataset: {dataset_item}')
     st.info(f'URL found [here]({url}). Documentation found [here]({doc}).')
 
-    is_factor = st.sidebar.multiselect('Are there any categorical variables?',
+    is_cat = st.sidebar.multiselect('Are there any categorical variables?',
                                        options=columns)
     cols_transf = st.sidebar.multiselect('Select columns to transform',
                                          options=columns)
@@ -75,14 +75,14 @@ def sidebar():
                                  ' (must be numeric)',
                                  options=[None] + columns)
     exog = [col for col in columns if col != endog]
-    na_strats = {
+    na_methods = {
         'Complete case': 'cc',
         'Fill-in': 'fi',
         'Fill-in with indicators': 'fii',
         'Grand model': 'gm',
         'MICE': 'mice',
     }
-    na_strategy_name = st.sidebar.selectbox(
+    na_method_name = st.sidebar.selectbox(
         'How should missing values be dealt with?',
         options=[
           'Complete case',
@@ -91,14 +91,21 @@ def sidebar():
           'Grand model',
           'MICE'
         ])
-    na_strategy = na_strats[na_strategy_name]
+    na_values_string = st.sidebar.text_input(
+        'Are there any text values that should be recognised as NA?'
+        ' (separate values with a comma)',
+        'Missing, missing, not found'
+    )
+    na_values = [s.strip() for s in na_values_string.split(',')]
+    na_method = na_methods[na_method_name]
     return {'url': url,
-            'is_factor': is_factor,
+            'is_cat': is_cat,
             'cols_transf': cols_transf,
             'transf': transf,
             'endog': endog,
             'exog': exog,
-            'na_strategy': na_strategy,
+            'na_values': na_values,
+            'na_method': na_method,
             'data': data,
             'item': dataset_item}
 
