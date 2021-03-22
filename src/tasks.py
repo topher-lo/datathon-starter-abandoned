@@ -35,13 +35,17 @@ transforms columns with `category` dtype
 using `pd.get_dummies`. NA values for each categorical column
 are represented by their own dummy column.
 
+10. `gelman_standardize_data`:
+Standardize data by dividing by 2 standard deviations and
+mean-centering them. Boolean columns are ignored.
+
 --- Modelling ---
 
-10. `run_model`: `statsmodels` linear regression implementation
+11. `run_model`: `statsmodels` linear regression implementation
 
 --- Post-processing ---
 
-11. `plot_confidence_intervals`: given a fitted OLS model in
+12. `plot_confidence_intervals`: given a fitted OLS model in
 `statsmodels`, returns a box and whisker regression coefficient plot.
 
 Note 1. Public functions (i.e. functions without a leading underscore `_func`)
