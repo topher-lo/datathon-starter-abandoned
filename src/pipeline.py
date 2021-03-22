@@ -10,6 +10,7 @@ from .tasks import clean_data
 from .tasks import transform_data
 from .tasks import encode_data
 from .tasks import wrangle_na
+from .tasks import gelman_standardize_data
 from .tasks import run_model
 from .tasks import plot_confidence_intervals
 
@@ -39,9 +40,10 @@ with Flow('e2e_pipeline') as e2e_pipeline:
     wrangled_data = wrangle_na(cleaned_data, na_method)
     transformed_data = transform_data(wrangled_data, cols_transf, transf)
     encoded_data = encode_data(transformed_data)
+    standardized_data = gelman_standardize_data(encoded_data)
 
     # Modelling
-    res = run_model(encoded_data, y=endog, X=exog)
+    res = run_model(standardized_data, y=endog, X=exog)
 
     # Postprocessing
     conf_int_chart = plot_confidence_intervals(res)
