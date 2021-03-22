@@ -3,53 +3,52 @@ encapsulated into the following functions:
 
 --- Preprocessing ---
 
-1. `retrieve_data`: retrieves data from a url, returns data
-as a DataFrame
+1. `retrieve_data`:
+Retrieves data from a url, returns data as a DataFrame.
 
-2. `_column_wrangler`: transforms column names
-into a consistent format
+2. `_column_wrangler`:
+Transforms column names into a consistent format.
 
-3. `_obj_wrangler`: converts columns with
-`object` dtype into `StringDtype`
+3. `_obj_wrangler`:
+Converts columns with `object` dtype into `StringDtype`.
 
 4. `_factor_wrangler`:
-converts columns in `is_cat` into `CategoricalDtype`
+Converts columns in `is_cat` into `CategoricalDtype`.
 
-5. `_check_model_assumptions`: empty function
+5. `_check_model_assumptions`:
+Empty function
 
 6. `clean_data`:
-a pandas pipeline of data wranglers
+A pandas pipeline of data wranglers.
 
 7. `wrangle_na`:
-wrangles missing values. 5 available strategies:
+Wrangles missing values. 5 available strategies:
 - Complete case
 - Fill-in
 - Fill-in with indicators
 - Grand model
 - MICE
 
-8. `transform_data`: applies transformations on data
+8. `transform_data`:
+Applies transformations on data.
 
 9. `encode_data`:
-transforms columns with `category` dtype
-using `pd.get_dummies`. NA values for each categorical column
-are represented by their own dummy column.
+Transforms columns with `category` dtype into columns of dummies.
 
 10. `gelman_standardize_data`:
-Standardize data by dividing by 2 standard deviations and
-mean-centering them. Boolean columns are ignored.
+Standardizes data by dividing by 2 standard deviations and mean-centering them.
 
 --- Modelling ---
 
-11. `run_model`: `statsmodels` linear regression implementation
+11. `run_model`:
+`statsmodels` linear regression implementation.
 
 --- Post-processing ---
 
-12. `plot_confidence_intervals`: given a fitted OLS model in
-`statsmodels`, returns a box and whisker regression coefficient plot.
+12. `plot_confidence_intervals`:
+Given a fitted OLS model in `statsmodels`, returns a box and whisker regression coefficient plot.
 
-Note 1. Public functions (i.e. functions without a leading underscore `_func`)
-are wrapped around Prefect's `@task` decorator.
+Note 1. Public functions (i.e. functions without a leading underscore `_func`) are wrapped around Prefect's `@task` decorator
 
 Note 2. Empty functions (e.g. `_check_model_assumptions`) are
 suggested data tasks for the boilerplate's user to implement.
@@ -91,15 +90,21 @@ def retrieve_data(url: str,
                   sep: str = ',',
                   nrows: Union[None, int] = None) -> pd.DataFrame:
     """Reads data (from url string) into a DataFrame.
-    Assumes download data is a text file (a.k.a flat file).
-    `sep` defaults to ',' accept CSV files.
 
-    If `sep` is specified as None, the separator is automatically
-    detected using Python's builtin sniffer tool `csv.sniffer`.
+    Args:
+        url (str): 
+            URL to data. Data is a delimiter-separated text file.
 
-    `nrows` specifies the number of rows of the file to read. Useful
-    for examining the header without downloading the entire file, or
-    for reading pieces of large files.
+        sep (str): 
+            Delimiter to use.
+
+        nrows (int): 
+            Number of rows of the file to read. Useful
+            for examining the header without downloading the entire file, or
+            for reading pieces of large files.
+
+    Returns:
+        A delimiter-separated text file is returned as a Pandas DataFrame.
 
     Note 1. pandas uses its super fast C engine to read flat files
     ONLY IF `sep` is explicitly given. Otherwise, it uses
@@ -110,9 +115,9 @@ def retrieve_data(url: str,
     data formats. See https://pandas.pydata.org/pandas-docs/dev/user_guide/io.html
     for more information. Change the code within this function to retrieve data
     from sources other than CSV (e.g. data stored on a SQL database).
-
-    Note 3. ignores unnamed index columns.
     """
+    # If `sep` is specified as None, the separator is automatically
+    # detected using Python's builtin sniffer tool `csv.sniffer`.
     data = pd.read_csv(url, sep=sep)
     # Remove unnamed index columns
     data = data.loc[:, ~data.columns.str.contains('Unnamed')]
@@ -162,12 +167,37 @@ def _factor_wrangler(
     dummy_to_bool: bool = True,
 ) -> pd.DataFrame:
     """Converts columns in `is_cat` to `CategoricalDtype`.
-    If `str_to_cat` is set to True, converts all `StringDtype` columns
-    to `CategoricalDtype`.If `dummy_to_bool` is True, converts all columns
-    with integer [0, 1] values into BooleanDtype.
-    Sets columns in `is_ordered` to an orderer category. For keys
-    (column names) in `categories`, sets respective column's categories
-    to the key's corresponding value (list of str, int, or float).
+
+    Args:
+        data (pd.DataFrame): 
+            The data.
+
+        is_cat (list of str): 
+            List of columns to convert to `CategoricalDtype`.
+
+        is_ordered (list of str): 
+            List of categorical columns to declare to have an ordered
+            relationship between its categories.
+
+        categories (dict of [str, int, float]): 
+            Dictionary with column names as keys and list of str, int, or
+            float as values. Column names must refer to categorical columns.
+            For each dictionary key in `categories`, `_factor_wrangler`
+            sets the corresponding key's (i.e. column's) categories to the
+            corresponding dictionary value (i.e. list of str, int, or float).
+
+        str_to_cat (bool): 
+            If `str_to_cat` is set to True, converts all `StringDtype` columns
+            to `CategoricalDtype`.
+
+        dummy_to_bool (bool): 
+            If `dummy_to_bool` is True, converts all columns with integer
+            [0, 1] values into `BooleanDtype`.
+
+    Returns:
+        A copy of the inputted Pandas DataFrame. Converts specified columns to
+        `CategoricalDtype`, both ordered and unordered, and sets specified
+        categorical columns' categories.
     """
 
     cat_cols = []
@@ -225,9 +255,9 @@ def clean_data(
     is_ordered: Union[None, List[str]] = None,
     categories: Union[None, Mapping[str, List[Union[str, int, float]]]] = None,
     str_to_cat: bool = True,
+    dummy_to_bool: bool = True,
 ) -> pd.DataFrame:
-    """Data preprocessing pipeline. Relaces values in `na_values`
-    with `np.nan` and runs the following data wranglers on `data`:
+    """Data preprocessing pipeline. Runs the following data wranglers on `data`:
     1. convert_dtypes
     2. _replace_na
     3. _column_wrangler
@@ -243,7 +273,8 @@ def clean_data(
                       is_cat,
                       is_ordered,
                       categories,
-                      str_to_cat)
+                      str_to_cat,
+                      dummy_to_bool)
                 .pipe(_check_model_assumptions))
     return data
 
@@ -257,35 +288,40 @@ def wrangle_na(data: pd.DataFrame,
     strategy specified in `method`.
 
     Available methods:
-    1. Complete case (`cc`) -- drops all missing values.
 
-    2. Fill-in (`fi`) -- imputes missing values with sklearn's `SimpleImputer`
+    1. "cc" -- Complete case: 
+        Drops all missing values.
 
-    3. Fill-in with indicators (`fii`) --
-    imputes missing values with sklearn's `SimpleImputer`; creates indicator
-    columns for patterns of missing values across feature columns.
+    2. "fi" -- Fill-in: 
+        Imputes missing values.
 
-    4. Fill-in with indicators and interactions (AKA grand model) (`gm`) --
-    imputes missing values with sklearn's `SimpleImputer`; creates indicator
-    columns akin to strategy 3; creates additional missing value indictor
-    columns for the complete set of interactions between features and the
-    missing value indactors.
+    3. "fii" --Fill-in with indicators: 
+        Imputes missing values; creates indicator columns for patterns of
+        missing values across feature columns.
 
-    5. Multiple imputation with chained equations (`mice`) --
-    performs MICE procedure. Returns each imputed dataset from N draws of
-    the original dataset. Optional arguments to specify in `kwargs`:
-    - `n_burnin` --
-    first `n_burnin` MICE iterations to skip; defaults to 20.
-    - `n_imputations` --
-    number of MICE iterations to save after burn-in phase; defaults to 10.
-    - `n_spread` --
-    number of MICE iterations to skip between saved imputations; defaults to 20.
+    4. "gm" -- Fill-in with indicators and interactions (AKA grand model): 
+        Imputes missing values; creates indicator columns akin to strategy 3;
+        creates additional missing value indictor columns for the complete set
+        of interactions between features and the missing value indactors.
+
+    5. "mice" -- Multiple imputation with chained equations: 
+        Performs MICE procedure. Returns each imputed dataset from N draws of
+        the original dataset. Optional arguments to specify in `kwargs`:
+
+        - `n_burnin`: 
+            First `n_burnin` MICE iterations to skip; defaults to 20.
+        - `n_imputations`: 
+            Number of MICE iterations to save after burn-in phase;
+            defaults to 10.
+        - `n_spread`: 
+            Number of MICE iterations to skip between saved imputations;
+            defaults to 20.
 
     Note 1. `**kwargs` contains required or optional keyword arguments for
     `sklearn.preprocessing.SimpleImputer` and
     `statsmodels.imputation.mice.MICEData`.
 
-    Note 2. By default for `fi`, `fii`, and `gm`, missing values in
+    Note 2. By default for "fi", "fii", and "gm", missing values in
     non-categorical columns are replaced by the mean along the column.
     Missing values in categorical columns are replaced by the most
     frequent value along the column.
@@ -403,12 +439,12 @@ def transform_data(
 ) -> pd.DataFrame:
     """Transforms columns in `cols` according to specified transformation.
     Transformations available:
-    - `log` -- Log transform
-    - `arcsinh` -- Inverse hyperbolic sine transform
+    - "log" -- Log transform
+    - "arcsinh" -- Inverse hyperbolic sine transform
 
     Raises:
-        ValueError: if `cols` in `data` contain zero values and `transf`
-        specified as `log`.
+        ValueError: if `cols` in `data` contain zero values and
+        `transf` is specified as "log".
     """
 
     funcs = {
@@ -427,9 +463,9 @@ def transform_data(
 
 @task
 def encode_data(data: pd.DataFrame) -> pd.DataFrame:
-    """Transforms columns with unordered `category` dtype
-    using `pd.get_dummies`. Transforms columns with ordered `category`
-    dtype using `series.cat.codes`.
+    """Transforms columns with unordered `category` dtype into dummy columns.
+    Transforms columns with ordered `category` dtype into their category
+    integer codes.
 
     Note: missing values are ignored (i.e. it is represented by a
     row of zeros for each categorical variable's dummy columns)
@@ -472,9 +508,8 @@ def gelman_standardize_data(data: pd.DataFrame):
 def run_model(data: pd.DataFrame,
               y: str,
               X: Union[str, List[str]]) -> OLSResults:
-    """Runs a linear regression of y on X and returns
-    a fitted OLS model in `statsmodels`. Replace the code
-    within this function with your own model.
+    """Runs a linear regression of y on X and
+    returns a fitted OLS model in `statsmodels`.
     """
     y, X = clean_text(y), [clean_text(x) for x in X]
     X_with_dummies = [col for col in data.columns if col != y and
@@ -491,10 +526,6 @@ def plot_confidence_intervals(res: OLSResults) -> str:
     """Returns a matplotlib axes containing a box and whisker
     Seaborn plot of regression coefficients' point estimates and
     confidence intervals.
-
-    Set the plot's colour palette using `palette`.
-    For a full list of colour palettes in Seaborn, check out:
-    medium.com/@morganjonesartist/color-guide-to-seaborn-palettes-da849406d44f
     """
     alt.themes.register("streamlit", streamlit_theme)  # Enable custom theme
     alt.themes.enable("streamlit")
