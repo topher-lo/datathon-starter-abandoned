@@ -15,7 +15,7 @@ from .tasks import run_model
 from .tasks import plot_confidence_intervals
 
 
-with Flow('wrangle_na') as wrangle_na_pipeline:
+with Flow('wrangle_na_pipeline') as wrangle_na_pipeline:
     data = Parameter('data', required=True)
     na_strategy = Parameter('na_strategy', default='cc')
     wrangled_data = wrangle_na(data, na_strategy)
