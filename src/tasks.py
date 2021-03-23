@@ -81,6 +81,7 @@ from statsmodels.regression.linear_model import OLSResults
 from statsmodels.imputation.mice import MICEData
 from src.styles.altair import streamlit_theme
 from pandas.api.types import is_categorical_dtype
+from pandas.api.types import is_float_dtype
 
 
 # Pre-processing
@@ -189,12 +190,12 @@ def _factor_wrangler(
             corresponding dictionary value (i.e. list of str, int, or float).
 
         str_to_cat (bool): 
-            If `str_to_cat` is set to True, converts all `StringDtype` columns
+            If True, converts all `StringDtype` columns
             to `CategoricalDtype`.
 
         dummy_to_bool (bool): 
-            If `dummy_to_bool` is True, converts all columns with integer
-            [0, 1] values into `BooleanDtype`.
+            If True, converts all columns with integer
+            [0, 1] values or float [0.0, 1.0] values into `BooleanDtype`.
 
     Returns:
         A copy of the inputted Pandas DataFrame. Converts specified columns to
@@ -209,12 +210,21 @@ def _factor_wrangler(
                         .tolist())
         cat_cols += str_cols
     if dummy_to_bool:
-        # Select columns with [0, 1] values only
-        dummy_cols = (data.loc[:, data.select_dtypes(include=['integer'])
-                                      .apply(pd.Series.unique)
-                                      .apply(sum) == 1])
+        # Select columns with [0, 1] (integer or float) values only
+        sum_cols = (data.select_dtypes(include=['integer', 'float'])
+                        .apply(pd.Series.unique)
+                        .apply(np.nansum) == 1)
+        mask = sum_cols.loc[sum_cols].index
+        # Convert floats in mask to integer
+        for col_name in mask:
+            col = data.loc[:, col_name]
+            if is_float_dtype(col):
+                data.loc[:, col_name] = (data.loc[:, col_name]
+                                             .astype('Int8'))
+
         # Convert dummy_cols into BooleanDtype
-        data.loc[:, dummy_cols] = data.loc[:, dummy_cols].astype('boolean')
+        data.loc[:, mask] = (data.loc[:, mask]
+                                 .astype('boolean'))
 
     if is_cat:
         is_cat = [clean_text(col) for col in is_cat]  # Clean col names
