@@ -1,3 +1,4 @@
+wheel
 altair
 numpy
 pandas
@@ -6,5 +7,4 @@ statsmodels
 streamlit
 streamlit-pandas-profiling
 scikit-learn
-wheel
 flake8

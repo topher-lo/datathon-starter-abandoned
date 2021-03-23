@@ -118,7 +118,7 @@ def retrieve_data(url: str,
     """
     # If `sep` is specified as None, the separator is automatically
     # detected using Python's builtin sniffer tool `csv.sniffer`.
-    data = pd.read_csv(url, sep=sep)
+    data = pd.read_csv(url, sep=sep, nrows=nrows)
     # Remove unnamed index columns
     data = data.loc[:, ~data.columns.str.contains('Unnamed')]
     return data
@@ -490,7 +490,7 @@ def encode_data(data: pd.DataFrame) -> pd.DataFrame:
 
 @task
 def gelman_standardize_data(data: pd.DataFrame):
-    """Standardize data by dividing by 2 standard deviations and
+    """Standardizes data by dividing by 2 standard deviations and
     mean-centering them. Boolean columns are ignored.
     """
     mask = (data.select_dtypes(include=['boolean'])
