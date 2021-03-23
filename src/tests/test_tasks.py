@@ -5,7 +5,11 @@ import pytest
 from io import StringIO
 
 from pandas.testing import assert_frame_equal
+from pandas.testing import assert_index_equal
 from numpy.testing import assert_allclose
+from numpy.testing import assert_equal
+
+from src.tasks import _column_wrangler
 
 
 # TESTCASES
@@ -120,6 +124,19 @@ def fake_regression_data():
 
 
 # UNIT TESTS
+
+def test_column_wrangler():
+    """Columns are transformed into a consistent format.
+    """
+    data = pd.DataFrame({
+        'column1': [1, 2, 3],
+        'cOLUmn2': [1, 2, 3],
+        '    cOLUmn3 ': [1, 2, 3],
+        ' column  4 ': [1, 2, 3],
+    })
+    result = _column_wrangler(data).columns
+    expected = pd.Index(['column1', 'column2', 'column3', 'column_4'])
+    assert_index_equal(result, expected)
 
 
 if __name__ == "__main__":
