@@ -77,7 +77,7 @@ from .utils import clean_text
 
 from sklearn.impute import SimpleImputer
 
-from statsmodels.regression.linear_model import OLSResults
+from statsmodels.regression.linear_model import RegressionResultsWrapper
 from statsmodels.imputation.mice import MICEData
 from src.styles.altair import streamlit_theme
 from pandas.api.types import is_categorical_dtype
@@ -529,7 +529,7 @@ def gelman_standardize_data(data: pd.DataFrame):
 @task
 def run_model(data: pd.DataFrame,
               y: str,
-              X: Union[str, List[str]]) -> OLSResults:
+              X: Union[str, List[str]]) -> RegressionResultsWrapper:
     """Runs a linear regression of y on X and
     returns a fitted OLS model in `statsmodels`.
     """
@@ -544,7 +544,7 @@ def run_model(data: pd.DataFrame,
 # Post-processing
 
 @task
-def plot_confidence_intervals(res: OLSResults) -> str:
+def plot_confidence_intervals(res: RegressionResultsWrapper) -> alt.Chart:
     """Returns a matplotlib axes containing a box and whisker
     Seaborn plot of regression coefficients' point estimates and
     confidence intervals.

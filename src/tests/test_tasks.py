@@ -1,3 +1,4 @@
+import altair as alt
 import numpy as np
 import pandas as pd
 import pytest
@@ -10,11 +11,15 @@ from pandas.testing import assert_index_equal
 from numpy.testing import assert_allclose
 from numpy.testing import assert_equal
 
+from statsmodels.regression.linear_model import RegressionResultsWrapper
+
 from src.tasks import _column_wrangler
 from src.tasks import _obj_wrangler
 from src.tasks import _factor_wrangler
 from src.tasks import clean_data
 from src.tasks import wrangle_na
+from src.tasks import run_model
+from src.tasks import plot_confidence_intervals
 
 
 # TESTCASES
@@ -411,6 +416,35 @@ def test_wrangle_na_mice(fake_regression_data):
     less than 1. Column dtypes are unchanged before and after.
     """
     pass
+
+
+def test_run_model(fake_regression_data) -> alt.Chart:
+    """Smoke test.
+    """
+    res = run_model.run(fake_regression_data,
+                        y='y',
+                        X=['x1', 'x2', 'x3', 'x4'])
+    assert isinstance(res, RegressionResultsWrapper)
+
+
+def test_plot_confidence_intervals(fake_regression_data):
+    """Smoke test.
+    """
+    res = run_model.run(fake_regression_data,
+                        y='y',
+                        X=['x1', 'x2', 'x3', 'x4'])
+    chart = plot_confidence_intervals.run(res)
+    chart_specs = chart.to_dict()
+    # Check chart width and height
+    assert chart_specs['width'] == 200
+    assert chart_specs['height'] == 500
+    # Check chart mark
+    assert chart_specs['mark'] == 'boxplot'
+    # Check chart encoding keys, and corresponding fields and type
+    assert chart_specs['encoding']['x']['field'] == 'regressor'
+    assert chart_specs['encoding']['x']['type'] == 'ordinal'
+    assert chart_specs['encoding']['y']['field'] == 'estimate'
+    assert chart_specs['encoding']['y']['type'] == 'quantitative'
 
 
 if __name__ == "__main__":
