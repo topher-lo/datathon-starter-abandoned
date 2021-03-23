@@ -14,6 +14,7 @@ from src.tasks import _column_wrangler
 from src.tasks import _obj_wrangler
 from src.tasks import _factor_wrangler
 from src.tasks import clean_data
+from src.tasks import wrangle_na
 
 
 # TESTCASES
