@@ -334,7 +334,8 @@ def wrangle_na(data: pd.DataFrame,
     `statsmodels.imputation.mice.MICEData`.
 
     Note 2. By default for "fi", "fii", and "gm", missing values in
-    non-categorical columns are replaced by the mean along the column.
+    float columns are replaced by the mean along the column. Missing values
+    in integer columns are replaced by the median along the column.
     Missing values in categorical and boolean columns are replaced by the most
     frequent value along the column.
     """
@@ -364,22 +365,25 @@ def wrangle_na(data: pd.DataFrame,
             # SimpleImputer (floats)
             float_kwargs = {'strategy': 'mean'}
             float_cols = data.select_dtypes(include=['float']).columns
-            data.loc[:, float_cols] = (
-                data.loc[:, float_cols].pipe(SimpleImputer(**float_kwargs)
-                                             .fit_transform))
+            if any(float_cols):
+                data.loc[:, float_cols] = (
+                    data.loc[:, float_cols].pipe(SimpleImputer(**float_kwargs)
+                                                 .fit_transform))
             # SimpleImputer (integer)
             int_kwargs = {'strategy': 'median'}
             int_cols = data.select_dtypes(include=['integer']).columns
-            data.loc[:, int_cols] = (
-                data.loc[:, int_cols].pipe(SimpleImputer(**int_kwargs)
-                                           .fit_transform))
+            if any(int_cols):
+                data.loc[:, int_cols] = (
+                    data.loc[:, int_cols].pipe(SimpleImputer(**int_kwargs)
+                                               .fit_transform))
             # SimpleImputer (categorical and boolean columns)
             fact_kwargs = {'strategy': 'most_frequent'}
             fact_cols = (data.select_dtypes(include=['category', 'boolean'])
                              .columns)
-            data.loc[:, fact_cols] = (
-                data.loc[:, fact_cols].pipe(SimpleImputer(**fact_kwargs)
-                                            .fit_transform))
+            if any(fact_cols):
+                data.loc[:, fact_cols] = (
+                    data.loc[:, fact_cols].pipe(SimpleImputer(**fact_kwargs)
+                                                .fit_transform))
 
         # If kwargs and cols specified
         elif kwargs and cols:
