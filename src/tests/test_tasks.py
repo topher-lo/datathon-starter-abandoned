@@ -82,6 +82,20 @@ STR_DATA_EXAMPLES = {
         7,19,99,13.8,1
         8,8,19,20.1,1
         9,NA,194,NULL,n/a""",
+    'airquality_imputed':
+        """
+        ,Ozone,Solar.R,Wind,fake_dummy,
+        0,41,190,7.4,0
+        1,36,118,8,0
+        2,12,149,12.6,0
+        3,23.85714,313,11.5,1
+        4,23.85714,,14.3,1
+        5,28,,14.9,1
+        6,23,299,8.6,1
+        7,19,99,13.8,1
+        8,8,19,20.1,1
+        9,23.85714,194,12.35556,1
+        """
 }
 
 # FIXTURES
@@ -252,6 +266,40 @@ def test_clean_data(data_examples):
     expected_bool_cols = pd.Index(['y', 'rep'])
     assert_index_equal(res_cat_cols, expected_cat_cols)
     assert_index_equal(res_bool_cols, expected_bool_cols)
+
+
+def test_wrangle_na(data_examples):
+    """All rows with missing values drop from DataFrame.
+    """
+    pass
+
+
+def test_wrangle_na_fi(data_examples):
+    """Numeric missing values imputed with mean value along index axis.
+    Categorical and boolean missing values imputed with most frequent value.
+    """
+    pass
+
+
+def test_wrangle_na_fii():
+    """Dummy columns exists for patterns of missing values across feature columns.
+    """
+    pass
+
+
+def test_wrangle_na_gm():
+    """Dummy columns exists for patterns of missing values across feature columns,
+    and interactions between features and missing value indicators.
+    """
+    pass
+
+
+def test_wrangle_na_mice():
+    """Each MICE imputed dataset from N draws has a Kullback-Leibler (KL)
+    divergence, with respect to the full original full dataset,
+    less than 1.
+    """
+    pass
 
 
 if __name__ == "__main__":
