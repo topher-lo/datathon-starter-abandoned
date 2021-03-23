@@ -11,6 +11,7 @@ from numpy.testing import assert_equal
 
 from src.tasks import _column_wrangler
 from src.tasks import _obj_wrangler
+from src.tasks import _factor_wrangler
 
 
 # TESTCASES
@@ -40,17 +41,17 @@ STR_DATA_EXAMPLES = {
     # Time series data with integer and binary cols (no range index)
     'us_consump_1940s':
         """
-        "year","income","expenditure","war",
-        "1940",241,226,0
-        "1941",280,240,0
-        "1942",319,235,1
-        "1943",331,245,1
-        "1944",345,255,1
-        "1945",340,265,1
-        "1946",332,295,0
-        "1947",320,300,0
-        "1948",339,305,0
-        "1949",338,315,0
+        ,"year","income","expenditure","war",
+        0,"1940",241,226,0
+        1,"1941",280,240,0
+        2,"1942",319,235,1
+        3,"1943",331,245,1
+        4,"1944",345,255,1
+        5,"1945",340,265,1
+        6,"1946",332,295,0
+        7,"1947",320,300,0
+        8,"1948",339,305,0
+        9,"1949",338,315,0
         """,
     # Cross-sectional data with float, string, factor, binary, and boolean cols
     'iraq_vote':
@@ -152,6 +153,57 @@ def test_obj_wrangler(data_examples):
                          .columns)
     expected = pd.Index(['state.abb', 'name', 'state.name'])  # String columns
     assert_index_equal(result_cols, expected)
+
+
+def test_factor_wrangler(data_examples):
+    """Columns in `is_cat` converted to `CategoricalDtype`.
+    """
+    data = data_examples['iraq_vote']
+    is_cat = ['state.abb', 'state.name']
+    result = _factor_wrangler(data,
+                              is_cat,
+                              str_to_cat=False,
+                              dummy_to_bool=False)
+    result_cols = (result.select_dtypes(include=['category'])
+                         .columns)
+    expected = pd.Index(['state.abb', 'state.name'])  # Category columns
+    assert_index_equal(result_cols, expected)
+
+
+def test_factor_wrangler_ordered(data_examples):
+    """Columns in `is_ordered` are set as ordered categorical columns.
+    """
+    data = data_examples['us_consump_1940s']
+    # Reverse order
+    data = data.iloc[::-1]
+    ordered_cat_cols = ['year']
+    result = _factor_wrangler(data,
+                              is_cat=ordered_cat_cols,
+                              is_ordered=ordered_cat_cols,
+                              str_to_cat=False,
+                              dummy_to_bool=False)
+    result_cat = result.loc[:, 'year'].cat
+    expected = pd.Index([i for i in range(1940, 1950)])
+    assert_index_equal(result_cat.categories, expected)
+    assert result_cat.ordered
+
+
+def test_factor_wrangler_cats():
+    """Columns in `categories` only contain enumerated values.
+    """
+    pass
+
+
+def test_factor_wrangler_str(data_examples):
+    """String columns are converted to categorical columns.
+    """
+    pass
+
+
+def test_factor_wrangler_dummy(data_examples):
+    """Dummy columns with values [0, 1] or [True, False] are converted to
+    boolean columns.
+    """
 
 
 if __name__ == "__main__":
