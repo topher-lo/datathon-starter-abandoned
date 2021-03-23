@@ -314,7 +314,7 @@ def wrangle_na(data: pd.DataFrame,
     4. "gm" -- Fill-in with indicators and interactions (AKA grand model): 
         Imputes missing values; creates indicator columns akin to strategy 3;
         creates additional missing value indictor columns for the complete set
-        of interactions between features and the missing value indactors.
+        of interactions between features and the missing value indicators.
 
     5. "mice" -- Multiple imputation with chained equations: 
         Performs MICE procedure. Returns each imputed dataset from N draws of
@@ -335,7 +335,7 @@ def wrangle_na(data: pd.DataFrame,
 
     Note 2. By default for "fi", "fii", and "gm", missing values in
     non-categorical columns are replaced by the mean along the column.
-    Missing values in categorical columns are replaced by the most
+    Missing values in categorical and boolean columns are replaced by the most
     frequent value along the column.
     """
 
