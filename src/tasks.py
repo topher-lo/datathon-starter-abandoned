@@ -546,14 +546,16 @@ def encode_data(data: pd.DataFrame) -> pd.DataFrame:
 @task
 def gelman_standardize_data(data: pd.DataFrame):
     """Standardizes data by dividing by 2 standard deviations and
-    mean-centering them. Non-numeric columns are ignored.
+    mean-centering them. Non-numeric columns (except boolean columns)
+    are ignored. Boolean columns are shifted to have mean zero (with True
+    represented by 1 and False by 0) but are not rescaled.
 
     Pre-conditions:
     1. All columns are cast as a nullable dtype in Pandas.
     2. All columns contain at most 1 nullable dtype (this condition
        should follow if 1. holds).
 
-    Post-condition: column dtypes are unchanged.
+    Note: integer columns are cast to float.
     """
     mask = (data.select_dtypes(include=['boolean'])
                 .columns)

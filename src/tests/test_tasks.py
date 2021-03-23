@@ -419,7 +419,9 @@ def test_wrangle_na_mice(fake_regression_data):
 
 
 def test_gelman_standardize_data():
-    """
+    """Numeric columns are divided by 2 s.d. and mean-centere.
+    Boolean columns are shifted to have mean zero.
+    All other columns are unchanged.
     """
     pass
 
