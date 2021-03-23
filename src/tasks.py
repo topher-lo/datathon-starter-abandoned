@@ -160,8 +160,8 @@ def _obj_wrangler(data: pd.DataFrame) -> pd.DataFrame:
 
 def _factor_wrangler(
     data: pd.DataFrame,
-    is_cat: Union[None, List[str]],
-    is_ordered: Union[None, List[str]],
+    is_cat: Union[None, List[str]] = None,
+    is_ordered: Union[None, List[str]] = None,
     categories: Union[None, Mapping[str, List[Union[str, int, float]]]] = None,
     str_to_cat: bool = True,
     dummy_to_bool: bool = True,
@@ -177,7 +177,9 @@ def _factor_wrangler(
 
         is_ordered (list of str): 
             List of categorical columns to declare to have an ordered
-            relationship between its categories.
+            relationship between its categories. If column is not specified
+            in `categories` argument, then the column's categories are set in
+            alphanumeric order.
 
         categories (dict of [str, int, float]): 
             Dictionary with column names as keys and list of str, int, or
