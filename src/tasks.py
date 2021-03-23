@@ -315,6 +315,8 @@ def wrangle_na(data: pd.DataFrame,
         Imputes missing values; creates indicator columns akin to strategy 3;
         creates additional missing value indictor columns for the complete set
         of interactions between features and the missing value indicators.
+        Missing value indicators have the same dtype as their corresponding
+        feature columns.
 
     5. "mice" -- Multiple imputation with chained equations: 
         Performs MICE procedure. Returns each imputed dataset from N draws of
@@ -338,6 +340,10 @@ def wrangle_na(data: pd.DataFrame,
     in integer columns are replaced by the median along the column.
     Missing values in categorical and boolean columns are replaced by the most
     frequent value along the column.
+
+    Note 3. Column dtypes are perserved.
+
+    Note 4. Indicator columns are cast as `BooleanDtype`.
     """
 
     # If no missing values
@@ -375,7 +381,8 @@ def wrangle_na(data: pd.DataFrame,
             if any(int_cols):
                 data.loc[:, int_cols] = (
                     data.loc[:, int_cols].pipe(SimpleImputer(**int_kwargs)
-                                               .fit_transform))
+                                               .fit_transform)
+                )
             # SimpleImputer (categorical and boolean columns)
             fact_kwargs = {'strategy': 'most_frequent'}
             fact_cols = (data.select_dtypes(include=['category', 'boolean'])

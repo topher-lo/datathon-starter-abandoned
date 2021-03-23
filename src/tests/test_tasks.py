@@ -144,6 +144,7 @@ def fake_regression_data():
 def test_column_wrangler():
     """Columns are transformed into a consistent format.
     """
+
     data = pd.DataFrame({
         'column1': [1, 2, 3],
         'cOLUmn2': [1, 2, 3],
@@ -158,6 +159,7 @@ def test_column_wrangler():
 def test_obj_wrangler(data_examples):
     """Columns with `object` dtype are converted to `StringDtype`.
     """
+
     data = data_examples['iraq_vote'].copy()
     result = _obj_wrangler(data)
     result_cols = (result.select_dtypes(include=['string'])
@@ -169,6 +171,7 @@ def test_obj_wrangler(data_examples):
 def test_factor_wrangler(data_examples):
     """Columns in `is_cat` converted to `CategoricalDtype`.
     """
+
     data = data_examples['iraq_vote'].copy()
     is_cat = ['state.abb', 'state.name']
     result = _factor_wrangler(data,
@@ -184,6 +187,7 @@ def test_factor_wrangler(data_examples):
 def test_factor_wrangler_ordered(data_examples):
     """Columns in `is_ordered` are set as ordered categorical columns.
     """
+
     data = data_examples['us_consump_1940s'].copy()
     # Reverse order
     data = data.iloc[::-1]
@@ -202,6 +206,7 @@ def test_factor_wrangler_ordered(data_examples):
 def test_factor_wrangler_cats():
     """Columns in `categories` only contain enumerated values.
     """
+
     data = pd.DataFrame({
         'non_neg': [-1, 0, 1, 2, 3],
         'only_alpha': ['A#', 'B', 'C', 'D', '10'],
@@ -230,6 +235,7 @@ def test_factor_wrangler_cats():
 def test_factor_wrangler_str(data_examples):
     """String columns are converted to categorical columns.
     """
+
     data = data_examples['iraq_vote'].copy()
     str_cols = ['state.abb', 'name', 'state.name']
     data.loc[:, str_cols] = data.loc[:, str_cols].astype('string')
@@ -245,6 +251,7 @@ def test_factor_wrangler_dummy(data_examples):
     """Dummy columns with values [0, 1] or [True, False] are converted to
     boolean columns.
     """
+
     data = data_examples['airquality_na'].copy()
     result = _factor_wrangler(data, dummy_to_bool=True)
     res_bool_cols = (result.select_dtypes(include=['boolean'])
@@ -259,6 +266,7 @@ def test_factor_wrangler_dummy(data_examples):
 def test_clean_data(data_examples):
     """Smoke test.
     """
+
     data = data_examples['iraq_vote'].copy()
     result = clean_data.run(data)
     res_cat_cols = (result.select_dtypes(include=['category'])
@@ -274,6 +282,7 @@ def test_clean_data(data_examples):
 def test_wrangle_na(data_examples):
     """All rows with missing values dropped from DataFrame.
     """
+
     data = data_examples['airquality_na'].copy()
     expected_shape = np.asarray((6, 4))
     expected = pd.Index([0, 1, 2, 6, 7, 8])
@@ -282,33 +291,124 @@ def test_wrangle_na(data_examples):
     assert_index_equal(expected, result.index)
 
 
-def test_wrangle_na_fi(data_examples):
-    """Numeric missing values imputed with mean value along index axis.
+def test_wrangle_na_fi():
+    """Float missing values imputed with mean value along index axis.
+    Integer missing values imputed with median value along index axis.
     Categorical and boolean missing values imputed with most frequent value.
+    Column dtypes are unchanged before and after.
     """
-    data = data_examples['airquality_na'].copy()
-    expected = data_examples['airquality_imputed']
+
+    dtypes = {'int_x': 'Int64',
+              'float_x': 'float',
+              'cat_x': 'category',
+              'bool_x': 'boolean'}
+    data = pd.DataFrame({
+        'int_x': [1, 2, np.nan, 4],  # Median = 2
+        'float_x': [1.5, np.nan, 2.5, 2.0],  # Mean = 1.5
+        'cat_x': ['A', 'A', 'B', pd.NA],  # Most freq = 'A'
+        'bool_x': [False, True, False, pd.NA]  # Most freq = False
+    }).astype(dtypes)
     result = wrangle_na.run(data, method='fi')
+    expected = pd.DataFrame({
+        'int_x': [1, 2, 2, 4],
+        'float_x': [1.5, 1.5, 2.5, 2.0],
+        'cat_x': ['A', 'A', 'B', 'A'],
+        'bool_x': [False, True, False, False]
+    }).astype(dtypes)
     assert_frame_equal(result, expected)
 
 
 def test_wrangle_na_fii():
     """Dummy columns exists for patterns of missing values across feature columns.
+    Column dtypes are unchanged before and after.
     """
-    pass
+
+    dtypes = {'int_x': 'Int64',
+              'float_x': 'float',
+              'cat_x': 'category',
+              'bool_x': 'boolean'}
+    data = pd.DataFrame({
+        'int_x': [1, 2, np.nan, 4],  # Median = 2
+        'float_x': [1.5, np.nan, 2.5, 2.0],  # Mean = 1.5
+        'cat_x': ['A', 'A', 'B', pd.NA],  # Most freq = 'A'
+        'bool_x': [False, True, False, pd.NA]  # Most freq = False
+    }).astype(dtypes)
+    result = wrangle_na.run(data, method='fi')
+    dummy_dtypes = {'na_1000': 'boolean',
+                    'na_0100': 'boolean',
+                    'na_0011': 'boolean'}
+    expected = pd.DataFrame({
+        'int_x': [1, 2, 2, 4],
+        'float_x': [1.5, 1.5, 2.5, 2.0],
+        'cat_x': ['A', 'A', 'B', 'A'],
+        'bool_x': [False, True, False, False],
+        'na_1000': [0, 0, 1, 0],
+        'na_0100': [0, 1, 0, 0],
+        'na_0011': [0, 0, 0, 1],
+    }).astype(dtypes).astype(dummy_dtypes)
+    assert_frame_equal(result, expected)
 
 
 def test_wrangle_na_gm():
     """Dummy columns exists for patterns of missing values across feature columns,
     and interactions between features and missing value indicators.
+    Column dtypes are unchanged before and after.
     """
-    pass
+
+    dtypes = {'int_x': 'Int64',
+              'float_x': 'float',
+              'cat_x': 'category',
+              'bool_x': 'boolean'}
+    data = pd.DataFrame({
+        'int_x': [1, 2, np.nan, 4],  # Median = 2
+        'float_x': [1.5, np.nan, 2.5, 2.0],  # Mean = 1.5
+        'cat_x': ['A', 'A', 'B', pd.NA],  # Most freq = 'A'
+        'bool_x': [False, True, False, pd.NA]  # Most freq = False
+    }).astype(dtypes)
+    result = wrangle_na.run(data, method='fi')
+    dummy_dtypes = {'na_1000': 'boolean',
+                    'na_0100': 'boolean',
+                    'na_0011': 'boolean',
+                    'Q("int_x"):Q("na_1000")': 'Int64',
+                    'Q("int_x"):Q("na_0100")': 'Int64',
+                    'Q("int_x"):Q("na_0011")': 'Int64',
+                    'Q("float_x"):Q("na_1000")': 'float',
+                    'Q("float_x"):Q("na_0100")': 'float',
+                    'Q("float_x"):Q("na_0011")': 'float',
+                    'Q("cat_x"):Q("na_1000")': 'category',
+                    'Q("cat_x"):Q("na_0100")': 'category',
+                    'Q("cat_x"):Q("na_0011")': 'category',
+                    'Q("bool_x"):Q("na_1000")': 'boolean',
+                    'Q("bool_x"):Q("na_0100")': 'boolean',
+                    'Q("bool_x"):Q("na_0011")': 'boolean'}
+    expected = pd.DataFrame({
+        'int_x': [1, 2, 2, 4],
+        'float_x': [1.5, 1.5, 2.5, 2.0],
+        'cat_x': ['A', 'A', 'B', 'A'],
+        'bool_x': [False, True, False, False],
+        'na_1000': [0, 0, 1, 0],
+        'na_0100': [0, 1, 0, 0],
+        'na_0011': [0, 0, 0, 1],
+        'Q("int_x"):Q("na_1000")': [1, 2, pd.NA, 4],
+        'Q("int_x"):Q("na_0100")': [1, pd.NA, 2, 4],
+        'Q("int_x"):Q("na_0011")': [1, 2, 2, pd.NA],
+        'Q("float_x"):Q("na_1000")': [1.5, 1.5, np.nan, 2.0],
+        'Q("float_x"):Q("na_0100")': [1.5, np.nan, 2.5, 2.0],
+        'Q("float_x"):Q("na_0011")': [1.5, 1.5, 2.5, np.nan],
+        'Q("cat_x"):Q("na_1000")': ['A', 'A', pd.NA, 'A'],
+        'Q("cat_x"):Q("na_0100")': ['A', pd.NA, 'B', 'A'],
+        'Q("cat_x"):Q("na_0011")': ['A', 'A', 'B', pd.NA],
+        'Q("bool_x"):Q("na_1000")': [False, True, pd.NA, False],
+        'Q("bool_x"):Q("na_0100")': [False, pd.NA, False, False],
+        'Q("bool_x"):Q("na_0011")': [False, True, False, pd.NA],
+    }).astype(dtypes).astype(dummy_dtypes)
+    assert_frame_equal(result, expected)
 
 
-def test_wrangle_na_mice():
+def test_wrangle_na_mice(fake_regression_data):
     """Each MICE imputed dataset from N draws has a Kullback-Leibler (KL)
     divergence, with respect to the full original full dataset,
-    less than 1.
+    less than 1. Column dtypes are unchanged before and after.
     """
     pass
 
