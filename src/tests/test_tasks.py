@@ -13,6 +13,7 @@ from numpy.testing import assert_equal
 from src.tasks import _column_wrangler
 from src.tasks import _obj_wrangler
 from src.tasks import _factor_wrangler
+from src.tasks import clean_data
 
 
 # TESTCASES
@@ -216,11 +217,11 @@ def test_factor_wrangler_str(data_examples):
     """
     data = data_examples['iraq_vote']
     result = _factor_wrangler(data, str_to_cat=True, dummy_to_bool=False)
-    result_cols = (result.select_dtypes(include=['category'])
-                         .columns)
+    res_cat_cols = (result.select_dtypes(include=['category'])
+                          .columns)
     # From string to categorical columns
     expected = pd.Index(['state.abb', 'name', 'state.name'])
-    assert_index_equal(result_cols, expected)
+    assert_index_equal(res_cat_cols, expected)
 
 
 def test_factor_wrangler_dummy(data_examples):
@@ -229,13 +230,28 @@ def test_factor_wrangler_dummy(data_examples):
     """
     data = data_examples['airquality_na']
     result = _factor_wrangler(data, dummy_to_bool=True)
-    dummy_col = (result.select_dtypes(include=['boolean'])
-                       .columns)
+    res_bool_cols = (result.select_dtypes(include=['boolean'])
+                           .columns)
     # From string to categorical columns
     expected = pd.DataFrame({
         'fake_dummy': [0, 0, 0, 1, 1, 1, 1, 1, 1, pd.NA],
     }).astype('boolean')
-    assert_frame_equal(result.loc[:, dummy_col], expected)
+    assert_frame_equal(result.loc[:, res_bool_cols], expected)
+
+
+def test_clean_data(data_examples):
+    """Smoke test.
+    """
+    data = data_examples['iraq_vote']
+    result = clean_data.run(data)
+    res_cat_cols = (result.select_dtypes(include=['category'])
+                          .columns)
+    res_bool_cols = (result.select_dtypes(include=['boolean'])
+                           .columns)
+    expected_cat_cols = pd.Index(['state.abb', 'name', 'state.name'])
+    expected_bool_cols = pd.Index(['y', 'rep'])
+    assert_index_equal(res_cat_cols, expected_cat_cols)
+    assert_index_equal(res_bool_cols, expected_bool_cols)
 
 
 if __name__ == "__main__":
