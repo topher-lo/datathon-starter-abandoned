@@ -10,6 +10,7 @@ from numpy.testing import assert_allclose
 from numpy.testing import assert_equal
 
 from src.tasks import _column_wrangler
+from src.tasks import _obj_wrangler
 
 
 # TESTCASES
@@ -39,7 +40,7 @@ STR_DATA_EXAMPLES = {
     # Time series data with integer and binary cols (no range index)
     'us_consump_1940s':
         """
-        "","income","expenditure","war",
+        "year","income","expenditure","war",
         "1940",241,226,0
         "1941",280,240,0
         "1942",319,235,1
@@ -54,17 +55,17 @@ STR_DATA_EXAMPLES = {
     # Cross-sectional data with float, string, factor, binary, and boolean cols
     'iraq_vote':
         """
-        "","y","state.abb","name","rep","state.name","gorevote"
-        "1",1,"AL","SESSIONS (R AL)",TRUE,"Alabama",41.59
-        "2",0,"CA","BOXER (D CA)",FALSE,"California",53.45
-        "3",0,"HI","INOUYE (D HI)",FALSE,"Hawaii",55.79
-        "4",1,"ID","CRAIG (R ID)",TRUE,"Idaho",27.64
-        "5",1,"ID","CRAPO (R ID)",TRUE,"Idaho",27.64
-        "6",0,"IL","DURBIN (D IL)",FALSE,"Illinois",54.6
-        "7",1,"IL","FITZGERALD (R IL)",TRUE,"Illinois",54.6
-        "8",0,"VT","LEAHY (D VT)",FALSE,"Vermont",50.63
-        "9",1,"VA","WARNER (R VA)",TRUE,"Virginia",44.44
-        "10",1,"WA","CANTWELL (D WA)",FALSE,"Washington",50.13
+        ,"y","state.abb","name","rep","state.name","gorevote"
+        1,1,"AL","SESSIONS (R AL)",TRUE,"Alabama",41.59
+        2,0,"CA","BOXER (D CA)",FALSE,"California",53.45
+        3,0,"HI","INOUYE (D HI)",FALSE,"Hawaii",55.79
+        4,1,"ID","CRAIG (R ID)",TRUE,"Idaho",27.64
+        5,1,"ID","CRAPO (R ID)",TRUE,"Idaho",27.64
+        6,0,"IL","DURBIN (D IL)",FALSE,"Illinois",54.6
+        7,1,"IL","FITZGERALD (R IL)",TRUE,"Illinois",54.6
+        8,0,"VT","LEAHY (D VT)",FALSE,"Vermont",50.63
+        9,1,"VA","WARNER (R VA)",TRUE,"Virginia",44.44
+        10,1,"WA","CANTWELL (D WA)",FALSE,"Washington",50.13
         """,
     # Air quality TSV data (with missing values)
     # Row 4: 1 NA, Row 5: 2 NA, Row 10: 3 NA
@@ -86,10 +87,13 @@ STR_DATA_EXAMPLES = {
         """,
 }
 
-DATA_EXAMPLES = {k: pd.DataFrame(StringIO(v)) for k, v
-                 in STR_DATA_EXAMPLES.items()}
-
 # FIXTURES
+
+@pytest.fixture(scope='session')
+def data_examples():
+    return {k: pd.read_csv(StringIO(v), index_col=0) for k, v
+            in STR_DATA_EXAMPLES.items()}
+
 
 @pytest.mark.slow
 @pytest.fixture(scope='session')
@@ -137,6 +141,17 @@ def test_column_wrangler():
     result = _column_wrangler(data).columns
     expected = pd.Index(['column1', 'column2', 'column3', 'column_4'])
     assert_index_equal(result, expected)
+
+
+def test_obj_wrangler(data_examples):
+    """Columns with `object` dtype are converted to `StringDtype`.
+    """
+    data = data_examples['iraq_vote']
+    result = _obj_wrangler(data)
+    result_cols = (result.select_dtypes(include=['string'])
+                         .columns)
+    expected = pd.Index(['state.abb', 'name', 'state.name'])  # String columns
+    assert_index_equal(result_cols, expected)
 
 
 if __name__ == "__main__":
