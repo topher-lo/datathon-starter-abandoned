@@ -5,6 +5,7 @@ import pytest
 from io import StringIO
 
 from pandas.testing import assert_frame_equal
+from pandas.testing import assert_series_equal
 from pandas.testing import assert_index_equal
 from numpy.testing import assert_allclose
 from numpy.testing import assert_equal
@@ -40,8 +41,7 @@ STR_NA_VALUES = [
 STR_DATA_EXAMPLES = {
     # Time series data with integer and binary cols (no range index)
     'us_consump_1940s':
-        """
-        ,"year","income","expenditure","war",
+        ""","year","income","expenditure","war",
         0,"1940",241,226,0
         1,"1941",280,240,0
         2,"1942",319,235,1
@@ -51,41 +51,36 @@ STR_DATA_EXAMPLES = {
         6,"1946",332,295,0
         7,"1947",320,300,0
         8,"1948",339,305,0
-        9,"1949",338,315,0
-        """,
+        9,"1949",338,315,0""",
     # Cross-sectional data with float, string, factor, binary, and boolean cols
     'iraq_vote':
-        """
-        ,"y","state.abb","name","rep","state.name","gorevote"
-        1,1,"AL","SESSIONS (R AL)",TRUE,"Alabama",41.59
-        2,0,"CA","BOXER (D CA)",FALSE,"California",53.45
-        3,0,"HI","INOUYE (D HI)",FALSE,"Hawaii",55.79
-        4,1,"ID","CRAIG (R ID)",TRUE,"Idaho",27.64
-        5,1,"ID","CRAPO (R ID)",TRUE,"Idaho",27.64
-        6,0,"IL","DURBIN (D IL)",FALSE,"Illinois",54.6
-        7,1,"IL","FITZGERALD (R IL)",TRUE,"Illinois",54.6
-        8,0,"VT","LEAHY (D VT)",FALSE,"Vermont",50.63
-        9,1,"VA","WARNER (R VA)",TRUE,"Virginia",44.44
-        10,1,"WA","CANTWELL (D WA)",FALSE,"Washington",50.13
-        """,
+        ""","y","state.abb","name","rep","state.name","gorevote"
+        0,1,"AL","SESSIONS (R AL)",TRUE,"Alabama",41.59
+        1,0,"CA","BOXER (D CA)",FALSE,"California",53.45
+        2,0,"HI","INOUYE (D HI)",FALSE,"Hawaii",55.79
+        3,1,"ID","CRAIG (R ID)",TRUE,"Idaho",27.64
+        4,1,"ID","CRAPO (R ID)",TRUE,"Idaho",27.64
+        5,0,"IL","DURBIN (D IL)",FALSE,"Illinois",54.6
+        6,1,"IL","FITZGERALD (R IL)",TRUE,"Illinois",54.6
+        7,0,"VT","LEAHY (D VT)",FALSE,"Vermont",50.63
+        8,1,"VA","WARNER (R VA)",TRUE,"Virginia",44.44
+        9,1,"WA","CANTWELL (D WA)",FALSE,"Washington",50.13""",
     # Air quality TSV data (with missing values)
     # Row 4: 1 NA, Row 5: 2 NA, Row 10: 3 NA
     # Mean = 23.85714, 172.62500, 12.35556. 0.66667
     # Mode (Dummy col) = 1
     'airquality_na':
-        """
-        ,Ozone,Solar.R,Wind,Dummy
-        1,41,190,7.4,0
-        2,36,118,8,0
-        3,12,149,12.6,0
-        4,NA,313,11.5,1
-        5,NA,,14.3,1
-        6,28,,14.9,1
-        7,23,299,8.6,1
-        8,19,99,13.8,1
-        9,8,19,20.1,1
-        10,NA,194,NULL,n/a
-        """,
+        """,Ozone,Solar.R,Wind,fake_dummy
+        0,41,190,7.4,0
+        1,36,118,8,0
+        2,12,149,12.6,0
+        3,NA,313,11.5,1
+        4,NA,,14.3,1
+        5,28,,14.9,1
+        6,23,299,8.6,1
+        7,19,99,13.8,1
+        8,8,19,20.1,1
+        9,NA,194,NULL,n/a""",
 }
 
 # FIXTURES
@@ -191,19 +186,56 @@ def test_factor_wrangler_ordered(data_examples):
 def test_factor_wrangler_cats():
     """Columns in `categories` only contain enumerated values.
     """
-    pass
+    data = pd.DataFrame({
+        'non_neg': [-1, 0, 1, 2, 3],
+        'only_alpha': ['A#', 'B', 'C', 'D', '10'],
+    })
+    categories = {
+        'non_neg': [0, 1, 2, 3],
+        'only_alpha': ['A', 'B', 'C', 'D']
+    }
+    result = _factor_wrangler(data,
+                              is_cat=['non_neg', 'only_alpha'],
+                              categories=categories,
+                              str_to_cat=False,
+                              dummy_to_bool=False)
+    expected = pd.DataFrame({
+        'non_neg': [pd.NA, 0, 1, 2, 3],
+        'only_alpha': [pd.NA, 'B', 'C', 'D', pd.NA]
+    }).astype('category')
+    expected.loc[:, 'only_alpha'] = (
+        expected.loc[:, 'only_alpha']
+        .cat
+        .set_categories(categories['only_alpha'])
+    )
+    assert_frame_equal(result, expected)
 
 
 def test_factor_wrangler_str(data_examples):
     """String columns are converted to categorical columns.
     """
-    pass
+    data = data_examples['iraq_vote']
+    result = _factor_wrangler(data, str_to_cat=True, dummy_to_bool=False)
+    result_cols = (result.select_dtypes(include=['category'])
+                         .columns)
+    # From string to categorical columns
+    expected = pd.Index(['state.abb', 'name', 'state.name'])
+    assert_index_equal(result_cols, expected)
 
 
 def test_factor_wrangler_dummy(data_examples):
     """Dummy columns with values [0, 1] or [True, False] are converted to
     boolean columns.
     """
+    data = data_examples['airquality_na']
+    result = _factor_wrangler(data, dummy_to_bool=True)
+    dummy_col = (result.select_dtypes(include=['boolean'])
+                       .columns)
+    # From string to categorical columns
+    expected = pd.DataFrame({
+        'fake_dummy': [0, 0, 0, 1, 1, 1, 1, 1, 1, pd.NA],
+    }).astype('boolean')
+    assert_frame_equal(result.loc[:, dummy_col], expected)
 
 
 if __name__ == "__main__":
