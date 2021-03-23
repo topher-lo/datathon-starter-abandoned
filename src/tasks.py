@@ -169,6 +169,13 @@ def _factor_wrangler(
 ) -> pd.DataFrame:
     """Converts columns in `is_cat` to `CategoricalDtype`.
 
+    Pre-conditions:
+    1. Columns in `is_cat` must be convertible to `CategoricalDtype`.
+    2. Columns in `is_ordered` must already be cast as a categorical column.
+       Otherwise, the columns must either be specified in `is_cat`, is a string
+       column and `str_to_cat` is True, or is a boolean column and
+       `dummy_to_bool` is True.
+
     Args:
         data (pd.DataFrame): 
             The data.
@@ -200,7 +207,8 @@ def _factor_wrangler(
     Returns:
         A copy of the inputted Pandas DataFrame. Converts specified columns to
         `CategoricalDtype`, both ordered and unordered, and sets specified
-        categorical columns' categories.
+        categorical columns' categories. All other columns' dtypes
+        are unchanged.
     """
 
     cat_cols = []
@@ -299,6 +307,11 @@ def wrangle_na(data: pd.DataFrame,
     """Wrangles missing values in `data` according to the
     strategy specified in `method`.
 
+    Pre-conditions:
+    1. All columns are cast as a nullable dtype in Pandas.
+    2. All columns contain at most 1 nullable dtype (this condition
+       should follow if 1. holds).
+
     Available methods:
 
     1. "cc" -- Complete case: 
@@ -341,9 +354,9 @@ def wrangle_na(data: pd.DataFrame,
     Missing values in categorical and boolean columns are replaced by the most
     frequent value along the column.
 
-    Note 3. Column dtypes are perserved.
+    Note 3. Indicator columns are cast as `BooleanDtype`.
 
-    Note 4. Indicator columns are cast as `BooleanDtype`.
+    Key post-condition: Column dtypes are unchanged.
     """
 
     # If no missing values
@@ -461,9 +474,18 @@ def transform_data(
     transf: str = 'arcsinh',
 ) -> pd.DataFrame:
     """Transforms columns in `cols` according to specified transformation.
+
+    Pre-conditions:
+    1. There are no missing values in any columns EXCEPT for values
+       in "grand model" feature x missing value interactions.
+    2. All columns contain at most 1 nullable dtype (this condition
+       should follow if 1. holds).
+
     Transformations available:
     - "log" -- Log transform
     - "arcsinh" -- Inverse hyperbolic sine transform
+
+    Post-condition: Column dtypes are unchanged.
 
     Raises:
         ValueError: if `cols` in `data` contain zero values and
@@ -486,9 +508,22 @@ def transform_data(
 
 @task
 def encode_data(data: pd.DataFrame) -> pd.DataFrame:
-    """Transforms columns with unordered `category` dtype into dummy columns.
-    Transforms columns with ordered `category` dtype into their category
-    integer codes.
+    """Transforms columns with unordered `CategoricalDtype` into dummy
+    columns. Dummy columns are cast as `BooleanDtype` columns. Transforms
+    columns with ordered `CategoricalDtype`into their category integer codes.
+
+    Pre-conditions:
+    1. There are no missing values in any columns EXCEPT for values
+       in "grand model" feature x missing value interactions.
+    2. All columns contain at most 1 nullable dtype (this condition
+       should follow if 1. holds).
+    3. There are only float, integer, boolean, or category columns.
+
+    Post-conditions:
+    1. There are no unordered `CategoricalDtype` columns. They are all
+       transformed into `BooleanDtype` dummy columns.
+    2. There are no ordered `CategoricalDtype` columns. They are all
+       transformed into Int64 dtype columns.
 
     Note: missing values are considered as its own individual category.
     """
@@ -513,7 +548,14 @@ def encode_data(data: pd.DataFrame) -> pd.DataFrame:
 @task
 def gelman_standardize_data(data: pd.DataFrame):
     """Standardizes data by dividing by 2 standard deviations and
-    mean-centering them. Boolean columns are ignored.
+    mean-centering them. Non-numeric columns are ignored.
+
+    Pre-conditions:
+    1. There are no missing values in any columns EXCEPT for values
+       in "grand model" feature x missing value interactions.
+    2. All columns contain at most 1 nullable dtype (this condition
+       should follow if 1. holds).
+
     """
     mask = (data.select_dtypes(include=['boolean'])
                 .columns)

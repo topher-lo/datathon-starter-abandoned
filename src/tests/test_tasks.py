@@ -413,7 +413,7 @@ def test_wrangle_na_gm():
 def test_wrangle_na_mice(fake_regression_data):
     """Each MICE imputed dataset from N draws has a Kullback-Leibler (KL)
     divergence, with respect to the full original full dataset,
-    less than 1. Column dtypes are unchanged before and after.
+    less than 1. Column dtypes are unchanged.
     """
     pass
 
