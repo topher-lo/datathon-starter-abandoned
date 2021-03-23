@@ -490,8 +490,7 @@ def encode_data(data: pd.DataFrame) -> pd.DataFrame:
     Transforms columns with ordered `category` dtype into their category
     integer codes.
 
-    Note: missing values are ignored (i.e. it is represented by a
-    row of zeros for each categorical variable's dummy columns)
+    Note: missing values are considered as its own individual category.
     """
     unordered_mask = data.apply(lambda col: is_categorical_dtype(col) and
                                 not(col.cat.ordered))
