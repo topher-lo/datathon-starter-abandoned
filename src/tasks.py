@@ -476,8 +476,7 @@ def transform_data(
     """Transforms columns in `cols` according to specified transformation.
 
     Pre-conditions:
-    1. There are no missing values in any columns EXCEPT for values
-       in "grand model" feature x missing value interactions.
+    1. All columns are cast as a nullable dtype in Pandas.
     2. All columns contain at most 1 nullable dtype (this condition
        should follow if 1. holds).
 
@@ -513,8 +512,7 @@ def encode_data(data: pd.DataFrame) -> pd.DataFrame:
     columns with ordered `CategoricalDtype`into their category integer codes.
 
     Pre-conditions:
-    1. There are no missing values in any columns EXCEPT for values
-       in "grand model" feature x missing value interactions.
+    1. All columns are cast as a nullable dtype in Pandas.
     2. All columns contain at most 1 nullable dtype (this condition
        should follow if 1. holds).
     3. There are only float, integer, boolean, or category columns.
@@ -551,8 +549,7 @@ def gelman_standardize_data(data: pd.DataFrame):
     mean-centering them. Non-numeric columns are ignored.
 
     Pre-conditions:
-    1. There are no missing values in any columns EXCEPT for values
-       in "grand model" feature x missing value interactions.
+    1. All columns are cast as a nullable dtype in Pandas.
     2. All columns contain at most 1 nullable dtype (this condition
        should follow if 1. holds).
 
