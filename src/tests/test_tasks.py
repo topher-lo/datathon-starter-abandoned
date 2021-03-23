@@ -85,7 +85,7 @@ STR_DATA_EXAMPLES = {
         9,NA,194,NULL,n/a""",
     'airquality_imputed':
         """
-        ,Ozone,Solar.R,Wind,fake_dummy,
+        ,Ozone,Solar.R,Wind,fake_dummy
         0,41,190,7.4,0
         1,36,118,8,0
         2,12,149,12.6,0
@@ -270,9 +270,14 @@ def test_clean_data(data_examples):
 
 
 def test_wrangle_na(data_examples):
-    """All rows with missing values drop from DataFrame.
+    """All rows with missing values dropped from DataFrame.
     """
-    pass
+    data = data_examples['airquality_na']
+    expected_shape = np.asarray((6, 4))
+    expected = pd.Index([0, 1, 2, 6, 7, 8])
+    result = wrangle_na.run(data, method='cc')
+    assert_equal(expected_shape, result.shape)
+    assert_index_equal(expected, result.index)
 
 
 def test_wrangle_na_fi(data_examples):
