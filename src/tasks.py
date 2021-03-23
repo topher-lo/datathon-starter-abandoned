@@ -356,7 +356,7 @@ def wrangle_na(data: pd.DataFrame,
 
     Note 3. Indicator columns are cast as `BooleanDtype`.
 
-    Key post-condition: Column dtypes are unchanged.
+    Key post-condition: column dtypes are unchanged.
     """
 
     # If no missing values
@@ -484,7 +484,7 @@ def transform_data(
     - "log" -- Log transform
     - "arcsinh" -- Inverse hyperbolic sine transform
 
-    Post-condition: Column dtypes are unchanged.
+    Post-condition: column dtypes are unchanged.
 
     Raises:
         ValueError: if `cols` in `data` contain zero values and
@@ -553,6 +553,7 @@ def gelman_standardize_data(data: pd.DataFrame):
     2. All columns contain at most 1 nullable dtype (this condition
        should follow if 1. holds).
 
+    Post-condition: column dtypes are unchanged.
     """
     mask = (data.select_dtypes(include=['boolean'])
                 .columns)
