@@ -338,7 +338,7 @@ def test_wrangle_na_fii():
         'cat_x': ['A', 'A', 'B', pd.NA],  # Most freq = 'A'
         'bool_x': [False, True, False, pd.NA]  # Most freq = False
     }).astype(dtypes)
-    result = wrangle_na.run(data, method='fi')
+    result = wrangle_na.run(data, method='fii')
     dummy_dtypes = {'na_1000': 'boolean',
                     'na_0100': 'boolean',
                     'na_0011': 'boolean'}
@@ -370,7 +370,7 @@ def test_wrangle_na_gm():
         'cat_x': ['A', 'A', 'B', pd.NA],  # Most freq = 'A'
         'bool_x': [False, True, False, pd.NA]  # Most freq = False
     }).astype(dtypes)
-    result = wrangle_na.run(data, method='fi')
+    result = wrangle_na.run(data, method='gm')
     dummy_dtypes = {'na_1000': 'boolean',
                     'na_0100': 'boolean',
                     'na_0011': 'boolean',
@@ -413,7 +413,7 @@ def test_wrangle_na_gm():
 def test_wrangle_na_mice(fake_regression_data):
     """Each MICE imputed dataset from N draws has a Kullback-Leibler (KL)
     divergence, with respect to the full original full dataset,
-    less than 1. Column dtypes are unchanged.
+    that is less than 1. Column dtypes are unchanged.
     """
     pass
 
