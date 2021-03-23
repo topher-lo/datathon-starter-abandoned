@@ -85,8 +85,7 @@ STR_DATA_EXAMPLES = {
         8,8,19,20.1,1
         9,NA,194,NULL,n/a""",
     'airquality_imputed':
-        """
-        ,Ozone,Solar.R,Wind,fake_dummy
+        """,Ozone,Solar.R,Wind,fake_dummy
         0,41,190,7.4,0
         1,36,118,8,0
         2,12,149,12.6,0
@@ -232,11 +231,13 @@ def test_factor_wrangler_str(data_examples):
     """String columns are converted to categorical columns.
     """
     data = data_examples['iraq_vote'].copy()
+    str_cols = ['state.abb', 'name', 'state.name']
+    data.loc[:, str_cols] = data.loc[:, str_cols].astype('string')
     result = _factor_wrangler(data, str_to_cat=True, dummy_to_bool=False)
     res_cat_cols = (result.select_dtypes(include=['category'])
                           .columns)
     # From string to categorical columns
-    expected = pd.Index(['state.abb', 'name', 'state.name'])
+    expected = pd.Index(str_cols)
     assert_index_equal(res_cat_cols, expected)
 
 
