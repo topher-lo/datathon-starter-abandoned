@@ -41,7 +41,8 @@ STR_NA_VALUES = [
 ]  # Strings recognised as NA/NaN by Pandas
 
 STR_DATA_EXAMPLES = {
-    # Time series data with integer and binary cols (no range index)
+    # Time series data with integer and binary cols, no range index,
+    # and one unnamed col.
     'us_consump_1940s':
         ""","year","income","expenditure","war",
         0,"1940",241,226,0
@@ -90,8 +91,8 @@ STR_DATA_EXAMPLES = {
         1,36,118,8,0
         2,12,149,12.6,0
         3,23.85714,313,11.5,1
-        4,23.85714,,14.3,1
-        5,28,,14.9,1
+        4,23.85714,172.625,14.3,1
+        5,28,172.625,14.9,1
         6,23,299,8.6,1
         7,19,99,13.8,1
         8,8,19,20.1,1
@@ -158,7 +159,7 @@ def test_column_wrangler():
 def test_obj_wrangler(data_examples):
     """Columns with `object` dtype are converted to `StringDtype`.
     """
-    data = data_examples['iraq_vote']
+    data = data_examples['iraq_vote'].copy()
     result = _obj_wrangler(data)
     result_cols = (result.select_dtypes(include=['string'])
                          .columns)
@@ -169,7 +170,7 @@ def test_obj_wrangler(data_examples):
 def test_factor_wrangler(data_examples):
     """Columns in `is_cat` converted to `CategoricalDtype`.
     """
-    data = data_examples['iraq_vote']
+    data = data_examples['iraq_vote'].copy()
     is_cat = ['state.abb', 'state.name']
     result = _factor_wrangler(data,
                               is_cat,
@@ -184,7 +185,7 @@ def test_factor_wrangler(data_examples):
 def test_factor_wrangler_ordered(data_examples):
     """Columns in `is_ordered` are set as ordered categorical columns.
     """
-    data = data_examples['us_consump_1940s']
+    data = data_examples['us_consump_1940s'].copy()
     # Reverse order
     data = data.iloc[::-1]
     ordered_cat_cols = ['year']
@@ -230,7 +231,7 @@ def test_factor_wrangler_cats():
 def test_factor_wrangler_str(data_examples):
     """String columns are converted to categorical columns.
     """
-    data = data_examples['iraq_vote']
+    data = data_examples['iraq_vote'].copy()
     result = _factor_wrangler(data, str_to_cat=True, dummy_to_bool=False)
     res_cat_cols = (result.select_dtypes(include=['category'])
                           .columns)
@@ -243,7 +244,7 @@ def test_factor_wrangler_dummy(data_examples):
     """Dummy columns with values [0, 1] or [True, False] are converted to
     boolean columns.
     """
-    data = data_examples['airquality_na']
+    data = data_examples['airquality_na'].copy()
     result = _factor_wrangler(data, dummy_to_bool=True)
     res_bool_cols = (result.select_dtypes(include=['boolean'])
                            .columns)
@@ -257,7 +258,7 @@ def test_factor_wrangler_dummy(data_examples):
 def test_clean_data(data_examples):
     """Smoke test.
     """
-    data = data_examples['iraq_vote']
+    data = data_examples['iraq_vote'].copy()
     result = clean_data.run(data)
     res_cat_cols = (result.select_dtypes(include=['category'])
                           .columns)
@@ -272,7 +273,7 @@ def test_clean_data(data_examples):
 def test_wrangle_na(data_examples):
     """All rows with missing values dropped from DataFrame.
     """
-    data = data_examples['airquality_na']
+    data = data_examples['airquality_na'].copy()
     expected_shape = np.asarray((6, 4))
     expected = pd.Index([0, 1, 2, 6, 7, 8])
     result = wrangle_na.run(data, method='cc')
@@ -284,7 +285,10 @@ def test_wrangle_na_fi(data_examples):
     """Numeric missing values imputed with mean value along index axis.
     Categorical and boolean missing values imputed with most frequent value.
     """
-    pass
+    data = data_examples['airquality_na'].copy()
+    expected = data_examples['airquality_imputed']
+    result = wrangle_na.run(data, method='fi')
+    assert_frame_equal(result, expected)
 
 
 def test_wrangle_na_fii():
