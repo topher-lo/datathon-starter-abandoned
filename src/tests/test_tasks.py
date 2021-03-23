@@ -418,6 +418,12 @@ def test_wrangle_na_mice(fake_regression_data):
     pass
 
 
+def test_gelman_standardize_data():
+    """
+    """
+    pass
+
+
 def test_run_model(fake_regression_data) -> alt.Chart:
     """Smoke test.
     """
