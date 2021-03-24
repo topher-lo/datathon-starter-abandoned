@@ -484,8 +484,6 @@ def transform_data(
     - "log" -- Log transform
     - "arcsinh" -- Inverse hyperbolic sine transform
 
-    Post-condition: column dtypes are unchanged.
-
     Raises:
         ValueError: if `cols` in `data` contain zero values and
         `transf` is specified as "log".

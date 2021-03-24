@@ -421,18 +421,85 @@ def test_wrangle_na_mice(fake_regression_data):
     pass
 
 
-def test_transform_data():
+def test_transform_data_log():
     """Values in DataFrame are log transformed.
-    Column dtypes are unchanged.
     """
-    pass
+
+    dtypes = {
+        'float_x': 'float',
+        'int_x': 'Int64',
+        'nan_x': 'float',
+        'NA_x': 'Int64',
+        'empty_x': 'string',
+    }
+    data = pd.DataFrame({
+        'float_x': [1.1, 2.2, 3.3, 4.4],
+        'int_x': [1, 9, 8, 4],
+        'nan_x': [1.1, np.nan, 3.3, np.nan],
+        'NA_x': [pd.NA, 9, 8, pd.NA],
+        'empty_x': ['Do', 'not', 'select', 'me']
+    }).astype(dtypes)
+    cols = ['float_x', 'int_x', 'nan_x', 'NA_x']
+    result = transform_data(data, cols, transf='log')
+    expected = pd.DataFrame({
+        'float_x': [np.log(1.1), np.log(2.2), np.log(3.3), np.log(4.4)],
+        'int_x': [np.log(1), 9, 8, 4],
+        'nan_x': [1.1, np.nan, 3.3, np.nan],
+        'NA_x': [pd.NA, 9, 8, pd.NA],
+        'empty_x': ['Do', 'not', 'select', 'me']
+    }).astype(dtypes)
+    assert_frame_equal(result, expected)
+
+
+def test_transform_data_arcsinh():
+    """Values in DataFrame are arcsinh transformed.
+    """
+
+    dtypes = {
+        'float_x': 'float',
+        'int_x': 'Int64',
+        'nan_x': 'float',
+        'NA_x': 'Int64',
+        'empty_x': 'string',
+    }
+    data = pd.DataFrame({
+        'float_x': [1.1, 2.2, 3.3, 4.4],
+        'int_x': [1, 9, 8, 4],
+        'nan_x': [1.1, np.nan, 3.3, np.nan],
+        'NA_x': [pd.NA, 9, 8, pd.NA],
+        'empty_x': ['Do', 'not', 'select', 'me']
+    }).astype(dtypes)
+    cols = ['float_x', 'int_x', 'nan_x', 'NA_x']
+    result = transform_data(data, cols, transf='arcsinh')
+    expected = pd.DataFrame({
+        'float_x': [1.1, 2.2, 3.3, 4.4],
+        'int_x': [1, 9, 8, 4],
+        'nan_x': [1.1, np.nan, 3.3, np.nan],
+        'NA_x': [pd.NA, 9, 8, pd.NA],
+        'empty_x': ['Do', 'not', 'select', 'me']
+    }).astype(dtypes)
 
 
 def test_transform_data_zero():
     """Raises ValueError given zero values in DataFrame and
-    transf specified as log. Column dtypes are unchanged.
+    transf specified as log.
     """
-    pass
+    dtypes = {
+        'float_x': 'float',
+        'int_x': 'Int64',
+        'zero_x': 'float',
+    }
+    data = pd.DataFrame({
+        'float_x': [1.1, 2.2, 3.3, 4.4],
+        'int_x': [1, 9, 8, 4],
+        'zero_x': [0.0, 1.1, 2.2, 3.3],
+    }).astype(dtypes)
+    result = transform_data(data)
+    expected = pd.DataFrame({
+        'float_x': [1.1, 2.2, 3.3, 4.4],
+        'int_x': [1, 9, 8, 4],
+        'zero_x': [0.0, 1.1, 2.2, 3.3],
+    }).astype(dtypes)
 
 
 def test_gelman_standardize_data():
