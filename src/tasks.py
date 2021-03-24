@@ -359,8 +359,6 @@ def wrangle_na(data: pd.DataFrame,
     frequent value along the column.
 
     Note 3. Indicator columns are cast as `BooleanDtype`.
-
-    Key post-condition: column dtypes are unchanged.
     """
 
     # Clean col names
