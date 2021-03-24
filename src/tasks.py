@@ -513,7 +513,15 @@ def transform_data(
         if func == 'log' and (data.loc[:, cols] == 0).any().any():
             raise ValueError('Dataset contains zero values. Cannot take logs.')
         cols = [clean_text(col) for col in cols]
-        data.loc[:, cols] = functions[func](data.loc[:, cols])
+        # Get dict of dtypes in original cols
+        dtypes = (data.loc[:, cols]
+                      .dtypes.apply(lambda x: x.name).to_dict())
+        # Replace Int64 with Float64 in dtypes dict
+        coerced_dtypes = {k: (lambda v: 'Float64' if 'Int' in v else v)(v)
+                          for k, v in dtypes.items()}
+        # Apply transformation and coerce previously Int64 cols to Float64
+        data.loc[:, cols] = (functions[func](data.loc[:, cols])
+                             .astype(coerced_dtypes))
     return data
 
 
