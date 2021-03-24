@@ -21,7 +21,10 @@ Empty function
 6. `clean_data`:
 A pandas pipeline of data wranglers.
 
-7. `wrangle_na`:
+7. `encode_data`:
+Transforms columns with `category` dtype into columns of dummies.
+
+8. `wrangle_na`:
 Wrangles missing values. 5 available strategies:
 - Complete case
 - Fill-in
@@ -29,11 +32,8 @@ Wrangles missing values. 5 available strategies:
 - Grand model
 - MICE
 
-8. `transform_data`:
+9. `transform_data`:
 Applies transformations on data.
-
-9. `encode_data`:
-Transforms columns with `category` dtype into columns of dummies.
 
 10. `gelman_standardize_data`:
 Standardizes data by dividing by 2 standard deviations and mean-centering them.
@@ -302,6 +302,44 @@ def clean_data(
 
 
 @task
+def encode_data(data: pd.DataFrame) -> pd.DataFrame:
+    """Transforms columns with unordered `CategoricalDtype` into dummy
+    columns. Dummy columns are cast as `BooleanDtype` columns. Transforms
+    columns with ordered `CategoricalDtype`into their category integer codes.
+
+    Pre-conditions:
+    1. All columns are cast as a nullable dtype in Pandas.
+    2. All columns contain at most 1 nullable dtype (this condition
+       should follow if 1. holds).
+    3. There are only float, integer, boolean, or category columns.
+
+    Post-conditions:
+    1. There are no unordered `CategoricalDtype` columns. They are all
+       transformed into `BooleanDtype` dummy columns.
+    2. There are no ordered `CategoricalDtype` columns. They are all
+       transformed into Int64 dtype columns.
+
+    Note: missing values are considered as its own individual category.
+    """
+    unordered_mask = data.apply(lambda col: is_categorical_dtype(col) and
+                                not(col.cat.ordered))
+    ordered_mask = data.apply(lambda col: is_categorical_dtype(col) and
+                              col.cat.ordered)
+    unordered = (data.loc[:, unordered_mask]
+                     .columns)
+    ordered = (data.loc[:, ordered_mask]
+                   .columns)
+    if unordered.any():
+        dummies = pd.get_dummies(data.loc[:, unordered]).astype('boolean')
+        data = (data.loc[:, ~data.columns.isin(unordered)]
+                    .join(dummies))
+    if ordered.any():
+        data.loc[:, ordered] = (data.loc[:, ordered]
+                                    .apply(lambda x: x.cat.codes))
+    return data
+
+
+@task
 def wrangle_na(data: pd.DataFrame,
                method: str,
                cols: Union[None, List[str]] = None,
@@ -522,44 +560,6 @@ def transform_data(
         # Apply transformation and coerce previously Int64 cols to Float64
         data.loc[:, cols] = (functions[func](data.loc[:, cols])
                              .astype(coerced_dtypes))
-    return data
-
-
-@task
-def encode_data(data: pd.DataFrame) -> pd.DataFrame:
-    """Transforms columns with unordered `CategoricalDtype` into dummy
-    columns. Dummy columns are cast as `BooleanDtype` columns. Transforms
-    columns with ordered `CategoricalDtype`into their category integer codes.
-
-    Pre-conditions:
-    1. All columns are cast as a nullable dtype in Pandas.
-    2. All columns contain at most 1 nullable dtype (this condition
-       should follow if 1. holds).
-    3. There are only float, integer, boolean, or category columns.
-
-    Post-conditions:
-    1. There are no unordered `CategoricalDtype` columns. They are all
-       transformed into `BooleanDtype` dummy columns.
-    2. There are no ordered `CategoricalDtype` columns. They are all
-       transformed into Int64 dtype columns.
-
-    Note: missing values are considered as its own individual category.
-    """
-    unordered_mask = data.apply(lambda col: is_categorical_dtype(col) and
-                                not(col.cat.ordered))
-    ordered_mask = data.apply(lambda col: is_categorical_dtype(col) and
-                              col.cat.ordered)
-    unordered = (data.loc[:, unordered_mask]
-                     .columns)
-    ordered = (data.loc[:, ordered_mask]
-                   .columns)
-    if unordered.any():
-        dummies = pd.get_dummies(data.loc[:, unordered]).astype('boolean')
-        data = (data.loc[:, ~data.columns.isin(unordered)]
-                    .join(dummies))
-    if ordered.any():
-        data.loc[:, ordered] = (data.loc[:, ordered]
-                                    .apply(lambda x: x.cat.codes))
     return data
 
 

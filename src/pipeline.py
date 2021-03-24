@@ -37,10 +37,10 @@ with Flow('e2e_pipeline') as e2e_pipeline:
     # Preprocessing
     data = retrieve_data(url, sep)
     cleaned_data = clean_data(data, na_values, is_cat)
-    wrangled_data = wrangle_na(cleaned_data, na_method)
+    encoded_data = encode_data(cleaned_data)
+    wrangled_data = wrangle_na(encoded_data, na_method)
     transformed_data = transform_data(wrangled_data, cols_transf, transf)
-    encoded_data = encode_data(transformed_data)
-    standardized_data = gelman_standardize_data(encoded_data)
+    standardized_data = gelman_standardize_data(transformed_data)
 
     # Modelling
     res = run_model(standardized_data, y=endog, X=exog)
