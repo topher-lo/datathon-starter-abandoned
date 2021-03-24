@@ -429,31 +429,31 @@ def test_transform_data_log():
         'float_x': 'float',
         'int_x': 'Int64',
         'nan_x': 'float',
-        'na_x': 'Int64',
+        'int_na_x': 'Int64',
         'empty_x': 'string',
     }
     data = pd.DataFrame({
         'float_x': [1.1, 2.2, 3.3, 4.4],
         'int_x': [1, 9, 8, 4],
         'nan_x': [1.1, np.nan, 3.3, np.nan],
-        'NA_x': [pd.NA, 9, 8, pd.NA],
+        'int_na_x': [pd.NA, 9, 8, pd.NA],
         'empty_x': ['Do', 'not', 'select', 'me']
     }).astype(dtypes)
-    cols = ['float_x', 'int_x', 'nan_x', 'na_x']
+    cols = ['float_x', 'int_x', 'nan_x', 'int_na_x']
     # Result
     result = transform_data.run(data, cols, func='log')
     expected_dtypes = {
         'float_x': 'float',
         'int_x': 'Float64',
         'nan_x': 'float',
-        'NA_x': 'Float64',
+        'int_na_x': 'Float64',
         'empty_x': 'string',
     }
     expected = pd.DataFrame({
         'float_x': [np.log(1.1), np.log(2.2), np.log(3.3), np.log(4.4)],
         'int_x': [np.log(1), np.log(9), np.log(8), np.log(4)],
         'nan_x': [np.log(1.1), np.nan, np.log(3.3), np.nan],
-        'NA_x': [pd.NA, np.log(9), np.log(8), pd.NA],
+        'int_na_x': [pd.NA, np.log(9), np.log(8), pd.NA],
         'empty_x': ['Do', 'not', 'select', 'me']
     }).astype(expected_dtypes)
     assert_frame_equal(result, expected)
@@ -467,24 +467,24 @@ def test_transform_data_arcsinh():
         'float_x': 'float',
         'int_x': 'Int64',
         'nan_x': 'float',
-        'NA_x': 'Int64',
+        'int_na_x': 'Int64',
         'empty_x': 'string',
     }
     data = pd.DataFrame({
         'float_x': [1.1, 2.2, 3.3, 4.4],
         'int_x': [1, 9, 8, 4],
         'nan_x': [1.1, np.nan, 3.3, np.nan],
-        'na_x': [pd.NA, 9, 8, pd.NA],
+        'int_na_x': [pd.NA, 9, 8, pd.NA],
         'empty_x': ['Do', 'not', 'select', 'me']
     }).astype(dtypes)
-    cols = ['float_x', 'int_x', 'nan_x', 'na_x']
+    cols = ['float_x', 'int_x', 'nan_x', 'int_na_x']
     # Result
     result = transform_data.run(data, cols, func='arcsinh')
     expected_dtypes = {
         'float_x': 'float',
         'int_x': 'Float64',
         'nan_x': 'float',
-        'NA_x': 'Float64',
+        'int_na_x': 'Float64',
         'empty_x': 'string',
     }
     expected = pd.DataFrame({
@@ -501,7 +501,7 @@ def test_transform_data_arcsinh():
             np.arcsinh(4)
         ],
         'nan_x': [np.arcsinh(1.1), np.nan, np.arcsinh(3.3), np.nan],
-        'NA_x': [pd.NA, np.arcsinh(9), np.arcsinh(8), pd.NA],
+        'int_na_x': [pd.NA, np.arcsinh(9), np.arcsinh(8), pd.NA],
         'empty_x': ['Do', 'not', 'select', 'me']
     }).astype(expected_dtypes)
     assert_frame_equal(result, expected)
@@ -536,24 +536,29 @@ def test_gelman_standardize_data():
     dtypes = {
         'float_x': 'float',
         'int_x': 'Int64',
+        'int_na_x': 'Int64',
         'bool_x': 'boolean',
         'cat_x': 'category',  # Should remain unchanged
         'string_x': 'string'  # Should remain unchanged
     }
     data = pd.DataFrame({
         'float_x': [2.2, 3.3, 1.1, 5.5, np.nan],  # mean=3.025, std=1.878607
-        'int_x': [2, 3, 1, pd.NA, 5],  # mean=2.75, std=1.707925
+        'int_x': [2, 3, 1, 4, 5],
+        'int_na_x': [2, 3, 1, pd.NA, 5],  # mean=2.75, std=1.707925
         'bool_x': [False, False, True, True, False],  # mean = 0.4
         'cat_x': ['A', 'B', 'C', 'D', 'E'],
         'string_x': ['This', 'should', 'be', 'unchanged', '.']
     }).astype(dtypes)
     float_x_mean, float_x_std = data['float_x'].mean(), 2*data['float_x'].std()
     int_x_mean, int_x_std = data['int_x'].mean(), 2*data['int_x'].std()
+    int_na_x_mean = data['int_na_x'].mean()
+    int_na_x_std = 2*data['int_na_x'].std()
     # Result
     result = gelman_standardize_data.run(data)
     expected_dtypes = {
         'float_x': 'float',
         'int_x': 'Float64',
+        'int_na_x': 'Float64',
         'bool_x': 'Float64',
         'cat_x': 'category',  # Should remain unchanged
         'string_x': 'string'  # Should remain unchanged
@@ -570,8 +575,15 @@ def test_gelman_standardize_data():
             (2-int_x_mean)/int_x_std,
             (3-int_x_mean)/int_x_std,
             (1-int_x_mean)/int_x_std,
-            pd.NA,
+            (4-int_x_mean)/int_x_std,
             (5-int_x_mean)/int_x_std
+        ],
+        'int_na_x': [
+            (2-int_na_x_mean)/int_na_x_std,
+            (3-int_na_x_mean)/int_na_x_std,
+            (1-int_na_x_mean)/int_na_x_std,
+            pd.NA,
+            (5-int_na_x_mean)/int_na_x_std
         ],
         'bool_x': [-0.4, -0.4, 0.6, 0.6, -0.4],
         'cat_x': ['A', 'B', 'C', 'D', 'E'],

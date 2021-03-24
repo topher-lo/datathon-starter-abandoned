@@ -348,6 +348,11 @@ def wrangle_na(data: pd.DataFrame,
             Number of MICE iterations to skip between saved imputations;
             defaults to 20.
 
+    Post-conditions:
+    1. Transformed columns originally cast as a nullable integer dtype
+       are coerced into Float64.
+    2. Indicator columns are cast as `BooleanDtype`.
+
     Note 1. `**kwargs` contains required or optional keyword arguments for
     `sklearn.preprocessing.SimpleImputer` and
     `statsmodels.imputation.mice.MICEData`.
@@ -357,8 +362,6 @@ def wrangle_na(data: pd.DataFrame,
     in integer columns are replaced by the median along the column.
     Missing values in categorical and boolean columns are replaced by the most
     frequent value along the column.
-
-    Note 3. Indicator columns are cast as `BooleanDtype`.
     """
 
     # Clean col names
@@ -487,10 +490,15 @@ def transform_data(
        should follow if 1. holds).
     3. All column names are in a consistent format(see `clean_text`
        in `utils.py`)
+    4. All columns in `cols` are cast as a numeric dtype.
 
     Transformations available:
     - "log" -- Log transform
     - "arcsinh" -- Inverse hyperbolic sine transform
+
+    Post-conditions:
+    1. Transformed columns originally cast as a nullable integer dtype
+       are coerced into Float64.
 
     Raises:
         ValueError: if `cols` in `data` contain zero values and
@@ -505,8 +513,7 @@ def transform_data(
         if func == 'log' and (data.loc[:, cols] == 0).any().any():
             raise ValueError('Dataset contains zero values. Cannot take logs.')
         cols = [clean_text(col) for col in cols]
-        data.loc[:, cols] = (data.loc[:, cols]
-                                 .apply(lambda x: functions[func](x)))
+        data.loc[:, cols] = functions[func](data.loc[:, cols])
     return data
 
 
@@ -562,8 +569,9 @@ def gelman_standardize_data(data: pd.DataFrame):
     3. All column names are in a consistent format(see `clean_text`
        in `utils.py`).
 
-    Note: all nullable integer and nullable boolean columns
-    are cast as Float64 dtype.
+    Post-conditions:
+    1. Transformed columns originally cast as a nullable integer or nullable
+       boolean dtypes are coerced into Float64.
     """
 
     # Rescale numeric data
