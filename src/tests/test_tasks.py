@@ -19,6 +19,9 @@ from src.tasks import _factor_wrangler
 from src.tasks import clean_data
 from src.tasks import wrangle_na
 from src.tasks import run_model
+from src.tasks import transform_data
+from src.tasks import encode_data
+from src.tasks import gelman_standardize_data
 from src.tasks import plot_confidence_intervals
 
 
@@ -309,14 +312,14 @@ def test_wrangle_na_fi():
               'bool_x': 'boolean'}
     data = pd.DataFrame({
         'int_x': [1, 2, np.nan, 4],  # Median = 2
-        'float_x': [1.5, np.nan, 2.5, 2.0],  # Mean = 1.5
+        'float_x': [1.5, np.nan, 2.5, 2.0],  # Mean = 2.0
         'cat_x': ['A', 'A', 'B', pd.NA],  # Most freq = 'A'
         'bool_x': [False, True, False, pd.NA]  # Most freq = False
     }).astype(dtypes)
     result = wrangle_na.run(data, method='fi')
     expected = pd.DataFrame({
         'int_x': [1, 2, 2, 4],
-        'float_x': [1.5, 1.5, 2.5, 2.0],
+        'float_x': [1.5, 2.0, 2.5, 2.0],
         'cat_x': ['A', 'A', 'B', 'A'],
         'bool_x': [False, True, False, False]
     }).astype(dtypes)
@@ -334,7 +337,7 @@ def test_wrangle_na_fii():
               'bool_x': 'boolean'}
     data = pd.DataFrame({
         'int_x': [1, 2, np.nan, 4],  # Median = 2
-        'float_x': [1.5, np.nan, 2.5, 2.0],  # Mean = 1.5
+        'float_x': [1.5, np.nan, 2.5, 2.0],  # Mean = 2.0
         'cat_x': ['A', 'A', 'B', pd.NA],  # Most freq = 'A'
         'bool_x': [False, True, False, pd.NA]  # Most freq = False
     }).astype(dtypes)
@@ -344,7 +347,7 @@ def test_wrangle_na_fii():
                     'na_0011': 'boolean'}
     expected = pd.DataFrame({
         'int_x': [1, 2, 2, 4],
-        'float_x': [1.5, 1.5, 2.5, 2.0],
+        'float_x': [1.5, 2.0, 2.5, 2.0],
         'cat_x': ['A', 'A', 'B', 'A'],
         'bool_x': [False, True, False, False],
         'na_1000': [0, 0, 1, 0],
@@ -366,7 +369,7 @@ def test_wrangle_na_gm():
               'bool_x': 'boolean'}
     data = pd.DataFrame({
         'int_x': [1, 2, np.nan, 4],  # Median = 2
-        'float_x': [1.5, np.nan, 2.5, 2.0],  # Mean = 1.5
+        'float_x': [1.5, np.nan, 2.5, 2.0],  # Mean = 2.0
         'cat_x': ['A', 'A', 'B', pd.NA],  # Most freq = 'A'
         'bool_x': [False, True, False, pd.NA]  # Most freq = False
     }).astype(dtypes)
@@ -388,7 +391,7 @@ def test_wrangle_na_gm():
                     'Q("bool_x"):Q("na_0011")': 'boolean'}
     expected = pd.DataFrame({
         'int_x': [1, 2, 2, 4],
-        'float_x': [1.5, 1.5, 2.5, 2.0],
+        'float_x': [1.5, 2.0, 2.5, 2.0],
         'cat_x': ['A', 'A', 'B', 'A'],
         'bool_x': [False, True, False, False],
         'na_1000': [0, 0, 1, 0],
@@ -397,9 +400,9 @@ def test_wrangle_na_gm():
         'Q("int_x"):Q("na_1000")': [1, 2, pd.NA, 4],
         'Q("int_x"):Q("na_0100")': [1, pd.NA, 2, 4],
         'Q("int_x"):Q("na_0011")': [1, 2, 2, pd.NA],
-        'Q("float_x"):Q("na_1000")': [1.5, 1.5, np.nan, 2.0],
+        'Q("float_x"):Q("na_1000")': [1.5, 2.0, np.nan, 2.0],
         'Q("float_x"):Q("na_0100")': [1.5, np.nan, 2.5, 2.0],
-        'Q("float_x"):Q("na_0011")': [1.5, 1.5, 2.5, np.nan],
+        'Q("float_x"):Q("na_0011")': [1.5, 2.0, 2.5, np.nan],
         'Q("cat_x"):Q("na_1000")': ['A', 'A', pd.NA, 'A'],
         'Q("cat_x"):Q("na_0100")': ['A', pd.NA, 'B', 'A'],
         'Q("cat_x"):Q("na_0011")': ['A', 'A', 'B', pd.NA],
@@ -418,12 +421,56 @@ def test_wrangle_na_mice(fake_regression_data):
     pass
 
 
+def test_transform_data():
+    """Values in DataFrame are log transformed.
+    Column dtypes are unchanged.
+    """
+    pass
+
+
+def test_transform_data_zero():
+    """Raises ValueError given zero values in DataFrame and
+    transf specified as log. Column dtypes are unchanged.
+    """
+    pass
+
+
 def test_gelman_standardize_data():
-    """Numeric columns are divided by 2 s.d. and mean-centere.
+    """Numeric columns are divided by 2 s.d. and mean-centered.
     Boolean columns are shifted to have mean zero.
     All other columns are unchanged.
     """
-    pass
+
+    dtypes = {
+        'float_x': 'float',
+        'int_x': 'Int64',
+        'bool_x': 'boolean',
+        'cat_x': 'category',  # Should remain unchanged
+        'string_x': 'string'  # Should remain unchanged
+    }
+    data = pd.DataFrame({
+        'float_x': [2.2, 3.3, 1.1, 5.5, np.nan],
+        'int_x': [2, 3, 1, pd.NA, 5],
+        'bool_x': [False, False, True, True, False],
+        'cat_x': ['A', 'B', 'C', 'D', 'E'],
+        'string_x': ['This', 'should', 'be', 'unchanged', '.']
+    }).astype(dtypes)
+    result = gelman_standardize_data(data)
+    expected_dtypes = {
+        'float_x': 'float',
+        'int_x': 'float',
+        'bool_x': 'float',
+        'cat_x': 'category',  # Should remain unchanged
+        'string_x': 'string'  # Should remain unchanged
+    }
+    expected = pd.DataFrame({
+        'float_x': [2.2, 3.3, 1.1, 5.5, np.nan],
+        'int_x': [2, 3, 1, pd.NA, 5],
+        'bool_x': [-0.4, -0.4, 0.6, 0.6, -0.4],  # Mean shifted (mean = 0.4)
+        'cat_x': ['A', 'B', 'C', 'D', 'E'],
+        'string_x': ['This', 'should', 'be', 'unchanged', '.']
+    }).astype(expected_dtypes)
+    assert_frame_equal(result, expected)
 
 
 def test_run_model(fake_regression_data) -> alt.Chart:

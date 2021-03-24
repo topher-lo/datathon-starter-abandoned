@@ -555,7 +555,7 @@ def gelman_standardize_data(data: pd.DataFrame):
     2. All columns contain at most 1 nullable dtype (this condition
        should follow if 1. holds).
 
-    Note: integer columns are cast to float.
+    Note: all columns are cast to float.
     """
     mask = (data.select_dtypes(include=['boolean'])
                 .columns)
