@@ -555,14 +555,24 @@ def gelman_standardize_data(data: pd.DataFrame):
     2. All columns contain at most 1 nullable dtype (this condition
        should follow if 1. holds).
 
-    Note: all columns are cast to float.
+    Note: all nullable integer and nullable boolean columns
+    are cast as Float64 dtype.
     """
-    mask = (data.select_dtypes(include=['boolean'])
-                .columns)
-    data.loc[:, ~mask] = (
-        data.loc[:, ~mask].apply(lambda x: x - x.mean())  # Subtract mean
-                          .apply(lambda x: x / (2*x.std()))  # Divide by 2 sd
-    )
+
+    # Rescale numeric data
+    num_cols = (data.select_dtypes(include=['number'])
+                    .columns)
+    # Subtract mean, then divide by 2 std
+    num_cols_df = data.loc[:, num_cols].copy()  # Defensive copying
+    num_mean = num_cols_df.mean()
+    num_std = num_cols_df.std()
+    data.loc[:, num_cols] = (num_cols_df - num_mean) / (2*num_std)
+    # Rescale boolean data
+    bool_cols = (data.select_dtypes(include=['boolean'])
+                     .columns)
+    bool_cols_df = data.loc[:, bool_cols].copy()  # Defensive copying
+    # Only subtract mean
+    data.loc[:, bool_cols] = bool_cols_df - bool_cols_df.mean()
     return data
 
 

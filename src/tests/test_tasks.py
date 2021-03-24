@@ -455,16 +455,16 @@ def test_gelman_standardize_data():
         'cat_x': ['A', 'B', 'C', 'D', 'E'],
         'string_x': ['This', 'should', 'be', 'unchanged', '.']
     }).astype(dtypes)
+    float_x_mean, float_x_std = data['float_x'].mean(), 2*data['float_x'].std()
+    int_x_mean, int_x_std = data['int_x'].mean(), 2*data['int_x'].std()
     result = gelman_standardize_data.run(data)
     expected_dtypes = {
         'float_x': 'float',
-        'int_x': 'float',
-        'bool_x': 'float',
+        'int_x': 'Float64',
+        'bool_x': 'Float64',
         'cat_x': 'category',  # Should remain unchanged
         'string_x': 'string'  # Should remain unchanged
     }
-    float_x_mean, float_x_std = data['float_x'].mean(), 2*data['float_x'].std()
-    int_x_mean, int_x_std = data['int_x'].mean(), 2*data['int_x'].std()
     expected = pd.DataFrame({
         'float_x': [
             (2.2-float_x_mean)/float_x_std,
