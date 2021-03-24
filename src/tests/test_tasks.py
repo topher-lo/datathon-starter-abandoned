@@ -449,13 +449,13 @@ def test_gelman_standardize_data():
         'string_x': 'string'  # Should remain unchanged
     }
     data = pd.DataFrame({
-        'float_x': [2.2, 3.3, 1.1, 5.5, np.nan],
-        'int_x': [2, 3, 1, pd.NA, 5],
-        'bool_x': [False, False, True, True, False],
+        'float_x': [2.2, 3.3, 1.1, 5.5, np.nan],  # mean=3.025, std=1.878607
+        'int_x': [2, 3, 1, pd.NA, 5],  # mean=2.75, std=1.707925
+        'bool_x': [False, False, True, True, False],  # mean = 0.4
         'cat_x': ['A', 'B', 'C', 'D', 'E'],
         'string_x': ['This', 'should', 'be', 'unchanged', '.']
     }).astype(dtypes)
-    result = gelman_standardize_data(data)
+    result = gelman_standardize_data.run(data)
     expected_dtypes = {
         'float_x': 'float',
         'int_x': 'float',
@@ -463,10 +463,24 @@ def test_gelman_standardize_data():
         'cat_x': 'category',  # Should remain unchanged
         'string_x': 'string'  # Should remain unchanged
     }
+    float_x_mean, float_x_std = data['float_x'].mean(), 2*data['float_x'].std()
+    int_x_mean, int_x_std = data['int_x'].mean(), 2*data['int_x'].std()
     expected = pd.DataFrame({
-        'float_x': [2.2, 3.3, 1.1, 5.5, np.nan],
-        'int_x': [2, 3, 1, pd.NA, 5],
-        'bool_x': [-0.4, -0.4, 0.6, 0.6, -0.4],  # Mean shifted (mean = 0.4)
+        'float_x': [
+            (2.2-float_x_mean)/float_x_std,
+            (3.3-float_x_mean)/float_x_std,
+            (1.1-float_x_mean)/float_x_std,
+            (5.5-float_x_mean)/float_x_std,
+            np.nan
+        ],
+        'int_x': [
+            (2-int_x_mean)/int_x_std,
+            (3-int_x_mean)/int_x_std,
+            (1-int_x_mean)/int_x_std,
+            pd.NA,
+            (5-int_x_mean)/int_x_std
+        ],
+        'bool_x': [-0.4, -0.4, 0.6, 0.6, -0.4],
         'cat_x': ['A', 'B', 'C', 'D', 'E'],
         'string_x': ['This', 'should', 'be', 'unchanged', '.']
     }).astype(expected_dtypes)
