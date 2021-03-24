@@ -175,6 +175,8 @@ def _factor_wrangler(
        Otherwise, the columns must either be specified in `is_cat`, is a string
        column and `str_to_cat` is True, or is a boolean column and
        `dummy_to_bool` is True.
+    3. All column names are in a consistent format(see `clean_text`
+       in `utils.py`)
 
     Args:
         data (pd.DataFrame): 
@@ -311,6 +313,8 @@ def wrangle_na(data: pd.DataFrame,
     1. All columns are cast as a nullable dtype in Pandas.
     2. All columns contain at most 1 nullable dtype (this condition
        should follow if 1. holds).
+    3. All column names are in a consistent format(see `clean_text`
+       in `utils.py`).
 
     Available methods:
 
@@ -358,6 +362,9 @@ def wrangle_na(data: pd.DataFrame,
 
     Key post-condition: column dtypes are unchanged.
     """
+
+    # Clean col names
+    cols = [clean_text(col) for col in cols]
 
     # If no missing values
     if pd.notna(data).all().all():
@@ -471,14 +478,17 @@ def wrangle_na(data: pd.DataFrame,
 def transform_data(
     data: pd.DataFrame,
     cols: Union[None, List[str]] = None,
-    transf: str = 'arcsinh',
+    func: str = 'arcsinh',
 ) -> pd.DataFrame:
-    """Transforms columns in `cols` according to specified transformation.
+    """Transforms columns in `cols` according to
+    specified transformation in `func`.
 
     Pre-conditions:
     1. All columns are cast as a nullable dtype in Pandas.
     2. All columns contain at most 1 nullable dtype (this condition
        should follow if 1. holds).
+    3. All column names are in a consistent format(see `clean_text`
+       in `utils.py`)
 
     Transformations available:
     - "log" -- Log transform
@@ -486,20 +496,19 @@ def transform_data(
 
     Raises:
         ValueError: if `cols` in `data` contain zero values and
-        `transf` is specified as "log".
+        `func` is specified as "log".
     """
 
-    funcs = {
+    functions = {
         'log': np.log,
         'arcsinh': np.arcsinh,
     }
-    if transf == 'log' and (data.loc[:, cols] == 0).any().any():
-        raise ValueError('Dataset contains zero values. Cannot take logs.')
-
     if cols:
+        if func == 'log' and (data.loc[:, cols] == 0).any().any():
+            raise ValueError('Dataset contains zero values. Cannot take logs.')
         cols = [clean_text(col) for col in cols]
         data.loc[:, cols] = (data.loc[:, cols]
-                                 .apply(lambda x: funcs[transf](x)))
+                                 .apply(lambda x: functions[func](x)))
     return data
 
 
@@ -552,6 +561,8 @@ def gelman_standardize_data(data: pd.DataFrame):
     1. All columns are cast as a nullable dtype in Pandas.
     2. All columns contain at most 1 nullable dtype (this condition
        should follow if 1. holds).
+    3. All column names are in a consistent format(see `clean_text`
+       in `utils.py`).
 
     Note: all nullable integer and nullable boolean columns
     are cast as Float64 dtype.
@@ -582,6 +593,12 @@ def run_model(data: pd.DataFrame,
               X: Union[str, List[str]]) -> RegressionResultsWrapper:
     """Runs a linear regression of y on X and
     returns a fitted OLS model in `statsmodels`.
+
+    Pre-conditions:
+    1. All columns are cast as a nullable numeric dtype in Pandas.
+    2. All columns contain at most 1 nullable dtype (this condition
+       should follow if 1. holds).
+    3. 
     """
     y, X = clean_text(y), [clean_text(x) for x in X]
     X_with_dummies = [col for col in data.columns if col != y and

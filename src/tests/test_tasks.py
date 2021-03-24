@@ -429,7 +429,7 @@ def test_transform_data_log():
         'float_x': 'float',
         'int_x': 'Int64',
         'nan_x': 'float',
-        'NA_x': 'Int64',
+        'na_x': 'Int64',
         'empty_x': 'string',
     }
     data = pd.DataFrame({
@@ -439,15 +439,23 @@ def test_transform_data_log():
         'NA_x': [pd.NA, 9, 8, pd.NA],
         'empty_x': ['Do', 'not', 'select', 'me']
     }).astype(dtypes)
-    cols = ['float_x', 'int_x', 'nan_x', 'NA_x']
-    result = transform_data(data, cols, transf='log')
+    cols = ['float_x', 'int_x', 'nan_x', 'na_x']
+    # Result
+    result = transform_data.run(data, cols, func='log')
+    expected_dtypes = {
+        'float_x': 'float',
+        'int_x': 'Float64',
+        'nan_x': 'float',
+        'NA_x': 'Float64',
+        'empty_x': 'string',
+    }
     expected = pd.DataFrame({
         'float_x': [np.log(1.1), np.log(2.2), np.log(3.3), np.log(4.4)],
-        'int_x': [np.log(1), 9, 8, 4],
-        'nan_x': [1.1, np.nan, 3.3, np.nan],
-        'NA_x': [pd.NA, 9, 8, pd.NA],
+        'int_x': [np.log(1), np.log(9), np.log(8), np.log(4)],
+        'nan_x': [np.log(1.1), np.nan, np.log(3.3), np.nan],
+        'NA_x': [pd.NA, np.log(9), np.log(8), pd.NA],
         'empty_x': ['Do', 'not', 'select', 'me']
-    }).astype(dtypes)
+    }).astype(expected_dtypes)
     assert_frame_equal(result, expected)
 
 
@@ -466,24 +474,44 @@ def test_transform_data_arcsinh():
         'float_x': [1.1, 2.2, 3.3, 4.4],
         'int_x': [1, 9, 8, 4],
         'nan_x': [1.1, np.nan, 3.3, np.nan],
-        'NA_x': [pd.NA, 9, 8, pd.NA],
+        'na_x': [pd.NA, 9, 8, pd.NA],
         'empty_x': ['Do', 'not', 'select', 'me']
     }).astype(dtypes)
-    cols = ['float_x', 'int_x', 'nan_x', 'NA_x']
-    result = transform_data(data, cols, transf='arcsinh')
+    cols = ['float_x', 'int_x', 'nan_x', 'na_x']
+    # Result
+    result = transform_data.run(data, cols, func='arcsinh')
+    expected_dtypes = {
+        'float_x': 'float',
+        'int_x': 'Float64',
+        'nan_x': 'float',
+        'NA_x': 'Float64',
+        'empty_x': 'string',
+    }
     expected = pd.DataFrame({
-        'float_x': [1.1, 2.2, 3.3, 4.4],
-        'int_x': [1, 9, 8, 4],
-        'nan_x': [1.1, np.nan, 3.3, np.nan],
-        'NA_x': [pd.NA, 9, 8, pd.NA],
+        'float_x': [
+            np.arcsinh(1.1),
+            np.arcsinh(2.2),
+            np.arcsinh(3.3),
+            np.arcsinh(4.4)
+        ],
+        'int_x': [
+            np.arcsinh(1),
+            np.arcsinh(9),
+            np.arcsinh(8),
+            np.arcsinh(4)
+        ],
+        'nan_x': [np.arcsinh(1.1), np.nan, np.arcsinh(3.3), np.nan],
+        'NA_x': [pd.NA, np.arcsinh(9), np.arcsinh(8), pd.NA],
         'empty_x': ['Do', 'not', 'select', 'me']
-    }).astype(dtypes)
+    }).astype(expected_dtypes)
+    assert_frame_equal(result, expected)
 
 
 def test_transform_data_zero():
     """Raises ValueError given zero values in DataFrame and
     transf specified as log.
     """
+
     dtypes = {
         'float_x': 'float',
         'int_x': 'Int64',
@@ -494,12 +522,9 @@ def test_transform_data_zero():
         'int_x': [1, 9, 8, 4],
         'zero_x': [0.0, 1.1, 2.2, 3.3],
     }).astype(dtypes)
-    result = transform_data(data)
-    expected = pd.DataFrame({
-        'float_x': [1.1, 2.2, 3.3, 4.4],
-        'int_x': [1, 9, 8, 4],
-        'zero_x': [0.0, 1.1, 2.2, 3.3],
-    }).astype(dtypes)
+    with pytest.raises(ValueError, match=r'.*Cannot take logs.*'):
+        cols = ['float_x', 'int_x', 'zero_x']
+        result = transform_data.run(data, cols, func='log')  # noqa
 
 
 def test_gelman_standardize_data():
@@ -524,6 +549,7 @@ def test_gelman_standardize_data():
     }).astype(dtypes)
     float_x_mean, float_x_std = data['float_x'].mean(), 2*data['float_x'].std()
     int_x_mean, int_x_std = data['int_x'].mean(), 2*data['int_x'].std()
+    # Result
     result = gelman_standardize_data.run(data)
     expected_dtypes = {
         'float_x': 'float',
