@@ -313,7 +313,7 @@ def test_wrangle_na(data_examples):
     data = data_examples['airquality_na'].copy()
     expected_shape = np.asarray((6, 4))
     expected = pd.Index([0, 1, 2, 6, 7, 8])
-    result = wrangle_na.run(data, method='cc')
+    result = wrangle_na.run(data, strategy='cc')
     assert_equal(expected_shape, result.shape)
     assert_index_equal(expected, result.index)
 
@@ -335,7 +335,7 @@ def test_wrangle_na_fi():
         'cat_x': ['A', 'A', 'B', pd.NA],  # Most freq = 'A'
         'bool_x': [False, True, False, pd.NA]  # Most freq = False
     }).astype(dtypes)
-    result = wrangle_na.run(data, method='fi')
+    result = wrangle_na.run(data, strategy='fi')
     expected = pd.DataFrame({
         'int_x': [1, 2, 2, 4],
         'float_x': [1.5, 2.0, 2.5, 2.0],
@@ -360,7 +360,7 @@ def test_wrangle_na_fii():
         'cat_x': ['A', 'A', 'B', pd.NA],  # Most freq = 'A'
         'bool_x': [False, True, False, pd.NA]  # Most freq = False
     }).astype(dtypes)
-    result = wrangle_na.run(data, method='fii')
+    result = wrangle_na.run(data, strategy='fii')
     dummy_dtypes = {'na_1000': 'boolean',
                     'na_0100': 'boolean',
                     'na_0011': 'boolean'}
@@ -392,7 +392,7 @@ def test_wrangle_na_gm():
         'cat_x': ['A', 'A', 'B', pd.NA],  # Most freq = 'A'
         'bool_x': [False, True, False, pd.NA]  # Most freq = False
     }).astype(dtypes)
-    result = wrangle_na.run(data, method='gm')
+    result = wrangle_na.run(data, strategy='gm')
     dummy_dtypes = {'na_1000': 'boolean',
                     'na_0100': 'boolean',
                     'na_0011': 'boolean',

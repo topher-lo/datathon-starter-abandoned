@@ -17,8 +17,8 @@ from .tasks import plot_confidence_intervals
 
 with Flow('wrangle_na_pipeline') as wrangle_na_pipeline:
     data = Parameter('data', required=True)
-    na_strategy = Parameter('na_strategy', default='cc')
-    wrangled_data = wrangle_na(data, na_strategy)
+    strategy = Parameter('strategy', default='cc')
+    wrangled_data = wrangle_na(data, strategy)
 
 
 with Flow('e2e_pipeline') as e2e_pipeline:
@@ -28,7 +28,7 @@ with Flow('e2e_pipeline') as e2e_pipeline:
     sep = Parameter('sep', default=',')
     cat_cols = Parameter('cat_cols', default=None)
     na_values = Parameter('na_values', default=None)
-    na_method = Parameter('na_method', default='cc')
+    na_strategy = Parameter('na_strategy', default='cc')
     transformed_cols = Parameter('transformed_cols', default=None)
     transf = Parameter('transf', default=None)
     endog = Parameter('endog', required=True)
@@ -38,7 +38,7 @@ with Flow('e2e_pipeline') as e2e_pipeline:
     data = retrieve_data(url, sep)
     cleaned_data = clean_data(data, na_values, cat_cols)
     encoded_data = encode_data(cleaned_data)
-    wrangled_data = wrangle_na(encoded_data, na_method)
+    wrangled_data = wrangle_na(encoded_data, na_strategy)
     transformed_data = transform_data(wrangled_data, transformed_cols, transf)
     standardized_data = gelman_standardize_data(transformed_data)
 

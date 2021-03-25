@@ -293,8 +293,8 @@ def clean_data(
                 .pipe(_column_wrangler)
                 .pipe(_obj_wrangler)
                 .pipe(_factor_wrangler,
-                      is_cat,
-                      is_ordered,
+                      cat_cols,
+                      ordered_cols,
                       categories,
                       str_to_cat,
                       dummy_to_bool)
@@ -342,11 +342,11 @@ def encode_data(data: pd.DataFrame) -> pd.DataFrame:
 
 @task
 def wrangle_na(data: pd.DataFrame,
-               method: str,
+               strategy: str,
                cols: Union[None, List[str]] = None,
                **kwargs) -> pd.DataFrame:
     """Wrangles missing values in `data` according to the
-    strategy specified in `method`.
+    strategy specified in `strategy`.
 
     Pre-conditions:
     1. All columns are cast as a nullable dtype in Pandas.
@@ -403,6 +403,11 @@ def wrangle_na(data: pd.DataFrame,
     frequent value along the column.
     """
 
+    # If no missing values
+    if pd.notna(data).all().all():
+        # Return inputted dataframe
+        return data
+
     # Clean col names
     cols = [clean_text(col) for col in cols]
 
@@ -411,11 +416,11 @@ def wrangle_na(data: pd.DataFrame,
         return data
 
     # If complete case
-    if method == 'cc':
+    if strategy == 'cc':
         data = data.dropna(**kwargs)
 
     # If fill-in with indicators or grand model
-    if method in ['fii', 'gm']:
+    if strategy in ['fii', 'gm']:
         # Create indicator columns for patterns of na
         na_indicators = (data.applymap(lambda x: '1' if pd.isna(x) else '0')
                              .agg(''.join, axis=1)
@@ -424,7 +429,7 @@ def wrangle_na(data: pd.DataFrame,
         data = data.join(na_indicators)
 
     # If fill-in (or related)
-    if method in ['fi',  'fii', 'gm']:
+    if strategy in ['fi',  'fii', 'gm']:
         # SimpleImputer (numeric columns)
         # If kwargs not specified
         if not(kwargs):
@@ -462,7 +467,7 @@ def wrangle_na(data: pd.DataFrame,
             data = data.pipe(SimpleImputer(**kwargs).fit_transform)
 
     # If grand model
-    if method == 'gm':
+    if strategy == 'gm':
         # Get interactions between features and na_indicators
         na_cols = [col for col in data.columns if col.startswith('na_')]
         feature_cols = [col for col in data.columns if col not in na_cols]
@@ -482,7 +487,7 @@ def wrangle_na(data: pd.DataFrame,
         data = data.join(interactions)
 
     # If MICE
-    if method == 'mice':
+    if strategy == 'mice':
         # Label encode columns
         column_codes = pd.Categorical(data.columns)
         # Dictionary codes label
@@ -613,8 +618,10 @@ def run_model(data: pd.DataFrame,
     1. All columns are cast as a nullable numeric dtype in Pandas.
     2. All columns contain at most 1 nullable dtype (this condition
        should follow if 1. holds).
-    3. 
     """
+
+    # Downcast nullable numeric types to numpy float64
+    data = data.astype(np.float64)
     y, X = clean_text(y), [clean_text(x) for x in X]
     X_with_dummies = [col for col in data.columns if col != y and
                       any(x in col for x in X)]
