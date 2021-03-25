@@ -181,9 +181,9 @@ def test_factor_wrangler(data_examples):
     """
 
     data = data_examples['iraq_vote'].copy()
-    is_cat = ['state.abb', 'state.name']
+    cat_cols = ['state.abb', 'state.name']
     result = _factor_wrangler(data,
-                              is_cat,
+                              cat_cols,
                               str_to_cat=False,
                               dummy_to_bool=False)
     result_cols = (result.select_dtypes(include=['category'])
@@ -197,45 +197,64 @@ def test_factor_wrangler_ordered(data_examples):
     """
 
     data = data_examples['us_consump_1940s'].copy()
+    cba_list = ['E', 'D', 'C', 'B', 'A']*2
+    data.loc[:, 'cba'] = cba_list
     # Reverse order
     data = data.iloc[::-1]
-    ordered_cat_cols = ['year']
+    ordered_cols = ['year', 'cba']
     result = _factor_wrangler(data,
-                              is_cat=ordered_cat_cols,
-                              is_ordered=ordered_cat_cols,
+                              cat_cols=ordered_cols,
+                              ordered_cols=ordered_cols,
                               str_to_cat=False,
                               dummy_to_bool=False)
-    result_cat = result.loc[:, 'year'].cat
-    expected = pd.Index([i for i in range(1940, 1950)])
-    assert_index_equal(result_cat.categories, expected)
-    assert result_cat.ordered
+    year_result_cat = result.loc[:, 'year'].cat
+    cba_result_cat = result.loc[:, 'cba'].cat
+    year_expected = pd.Index([i for i in range(1940, 1950)])
+    cba_expected = pd.Index(['A', 'B', 'C', 'D', 'E'])
+    # Assertions
+    assert_index_equal(year_result_cat.categories, year_expected)
+    assert_index_equal(cba_result_cat.categories, cba_expected)
+    assert year_result_cat.ordered
+    assert cba_result_cat.ordered
 
 
 def test_factor_wrangler_cats():
     """Columns in `categories` only contain enumerated values.
+    The ordering of categories follow the corresponding list in `categories`.
     """
 
     data = pd.DataFrame({
         'non_neg': [-1, 0, 1, 2, 3],
         'only_alpha': ['A#', 'B', 'C', 'D', '10'],
+        'only_alpha_r': ['A#', 'B', 'C', 'D', '10'],
     })
     categories = {
         'non_neg': [0, 1, 2, 3],
-        'only_alpha': ['A', 'B', 'C', 'D']
+        'only_alpha': ['A', 'B', 'C', 'D'],
+        'only_alpha_r': ['D', 'C', 'B', 'A']
     }
+    cat_cols = ['non_neg', 'only_alpha', 'only_alpha_r']
+    ordered_cols = ['only_alpha_r']
     result = _factor_wrangler(data,
-                              is_cat=['non_neg', 'only_alpha'],
+                              cat_cols,
+                              ordered_cols,
                               categories=categories,
                               str_to_cat=False,
                               dummy_to_bool=False)
     expected = pd.DataFrame({
         'non_neg': [pd.NA, 0, 1, 2, 3],
-        'only_alpha': [pd.NA, 'B', 'C', 'D', pd.NA]
+        'only_alpha': [pd.NA, 'B', 'C', 'D', pd.NA],
+        'only_alpha_r': [pd.NA, 'B', 'C', 'D', pd.NA]
     }).astype('category')
     expected.loc[:, 'only_alpha'] = (
         expected.loc[:, 'only_alpha']
         .cat
         .set_categories(categories['only_alpha'])
+    )
+    expected.loc[:, 'only_alpha_r'] = (
+        expected.loc[:, 'only_alpha_r']
+        .cat.set_categories(categories['only_alpha_r'])
+        .cat.as_ordered()
     )
     assert_frame_equal(result, expected)
 

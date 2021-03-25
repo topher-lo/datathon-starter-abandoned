@@ -161,8 +161,8 @@ def _obj_wrangler(data: pd.DataFrame) -> pd.DataFrame:
 
 def _factor_wrangler(
     data: pd.DataFrame,
-    is_cat: Union[None, List[str]] = None,
-    is_ordered: Union[None, List[str]] = None,
+    cat_cols: Union[None, List[str]] = None,
+    ordered_cols: Union[None, List[str]] = None,
     categories: Union[None, Mapping[str, List[Union[str, int, float]]]] = None,
     str_to_cat: bool = True,
     dummy_to_bool: bool = True,
@@ -182,10 +182,10 @@ def _factor_wrangler(
         data (pd.DataFrame): 
             The data.
 
-        is_cat (list of str): 
+        cat_cols (list of str): 
             List of columns to convert to `CategoricalDtype`.
 
-        is_ordered (list of str): 
+        ordered_cols (list of str): 
             List of categorical columns to declare to have an ordered
             relationship between its categories. If column is not specified
             in `categories` argument, then the column's categories are set in
@@ -213,12 +213,12 @@ def _factor_wrangler(
         are unchanged.
     """
 
-    cat_cols = []
+    all_cat_cols = []
     if str_to_cat:
         str_cols = (data.select_dtypes(include=['string'])
                         .columns
                         .tolist())
-        cat_cols += str_cols
+        all_cat_cols += str_cols
     if dummy_to_bool:
         # Select columns with [0, 1] (integer or float) values only
         sum_cols = (data.select_dtypes(include=['integer', 'float'])
@@ -236,11 +236,11 @@ def _factor_wrangler(
         data.loc[:, mask] = (data.loc[:, mask]
                                  .astype('boolean'))
 
-    if is_cat:
-        is_cat = [clean_text(col) for col in is_cat]  # Clean col names
-        cat_cols += is_cat
     if cat_cols:
-        for col in cat_cols:
+        cat_cols = [clean_text(col) for col in cat_cols]  # Clean col names
+        all_cat_cols += cat_cols
+    if all_cat_cols:
+        for col in all_cat_cols:
             data.loc[:, col] = (data.loc[:, col]
                                     .astype('category'))
     # Set categories
@@ -252,9 +252,10 @@ def _factor_wrangler(
                                     .cat
                                     .set_categories(cats))
     # Set is_ordered
-    if is_ordered:
-        is_ordered = [clean_text(col) for col in is_ordered]  # Clean col names
-        for cat in is_ordered:
+    if ordered_cols:
+        # Clean col names
+        ordered_cols = [clean_text(col) for col in ordered_cols]
+        for col in ordered_cols:
             data.loc[:, col] = (data.loc[:, col]
                                     .cat
                                     .as_ordered())

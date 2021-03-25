@@ -26,20 +26,20 @@ with Flow('e2e_pipeline') as e2e_pipeline:
     # Pipeline parameters
     url = Parameter('url', required=True)
     sep = Parameter('sep', default=',')
-    is_cat = Parameter('is_cat', default=None)
+    cat_cols = Parameter('cat_cols', default=None)
     na_values = Parameter('na_values', default=None)
     na_method = Parameter('na_method', default='cc')
-    cols_transf = Parameter('cols_transf', default=None)
-    transf = Parameter('transf', default=None)
+    transformed_cols = Parameter('transformed_cols', default=None)
+    tfunc = Parameter('tfunc', default=None)
     endog = Parameter('endog', required=True)
     exog = Parameter('exog', required=True)
 
     # Preprocessing
     data = retrieve_data(url, sep)
-    cleaned_data = clean_data(data, na_values, is_cat)
+    cleaned_data = clean_data(data, na_values, cat_cols)
     encoded_data = encode_data(cleaned_data)
     wrangled_data = wrangle_na(encoded_data, na_method)
-    transformed_data = transform_data(wrangled_data, cols_transf, transf)
+    transformed_data = transform_data(wrangled_data, transformed_cols, tfunc)
     standardized_data = gelman_standardize_data(transformed_data)
 
     # Modelling

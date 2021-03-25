@@ -65,7 +65,7 @@ def sidebar():
     st.success(f'Successfully loaded dataset: {dataset_item}')
     st.info(f'URL found [here]({url}). Documentation found [here]({doc}).')
 
-    is_cat = st.sidebar.multiselect('Are there any categorical variables?',
+    cat_cols = st.sidebar.multiselect('Are there any categorical variables?',
                                        options=columns)
     cols_transf = st.sidebar.multiselect('Select columns to transform',
                                          options=columns)
@@ -99,7 +99,7 @@ def sidebar():
     na_values = [s.strip() for s in na_values_string.split(',')]
     na_method = na_methods[na_method_name]
     return {'url': url,
-            'is_cat': is_cat,
+            'cat_cols': cat_cols,
             'cols_transf': cols_transf,
             'transf': transf,
             'endog': endog,
