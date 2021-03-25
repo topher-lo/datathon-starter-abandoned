@@ -66,11 +66,11 @@ def sidebar():
     st.info(f'URL found [here]({url}). Documentation found [here]({doc}).')
 
     cat_cols = st.sidebar.multiselect('Are there any categorical variables?',
-                                       options=columns)
-    cols_transf = st.sidebar.multiselect('Select columns to transform',
-                                         options=columns)
+                                      options=columns)
+    transformed_cols = st.sidebar.multiselect('Select columns to transform',
+                                              options=columns)
     transf = st.sidebar.selectbox('Log or arcsinh transform?',
-                                 options=['log', 'arcsinh'])
+                                  options=['log', 'arcsinh'])
     endog = st.sidebar.selectbox('Select an endogenous variable'
                                  ' (must be numeric)',
                                  options=[None] + columns)
@@ -100,7 +100,7 @@ def sidebar():
     na_method = na_methods[na_method_name]
     return {'url': url,
             'cat_cols': cat_cols,
-            'cols_transf': cols_transf,
+            'transformed_cols': transformed_cols,
             'transf': transf,
             'endog': endog,
             'exog': exog,

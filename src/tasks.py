@@ -274,8 +274,8 @@ def _check_model_assumptions(data: pd.DataFrame) -> pd.DataFrame:
 def clean_data(
     data: pd.DataFrame,
     na_values: Union[None, List[Union[str, int, float]]] = None,
-    is_cat: Union[None, List[str]] = None,
-    is_ordered: Union[None, List[str]] = None,
+    cat_cols: Union[None, List[str]] = None,
+    ordered_cols: Union[None, List[str]] = None,
     categories: Union[None, Mapping[str, List[Union[str, int, float]]]] = None,
     str_to_cat: bool = True,
     dummy_to_bool: bool = True,
