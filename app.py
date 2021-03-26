@@ -4,14 +4,17 @@ via `streamlit run app.py`.
 """
 
 import pandas as pd
+import prefect
 import streamlit as st
 import missingno as msno
 
 from pandas_profiling import ProfileReport
 from streamlit_pandas_profiling import st_profile_report
+from typing import List
+from typing import Mapping
 
-from src.pipeline import e2e_pipeline
-from src.pipeline import wrangle_na_pipeline
+from prefect.client.client import ClientError
+from prefect.engine.state import State
 
 
 R_DATASETS_URL = 'https://vincentarelbundock.github.io/Rdatasets'
@@ -30,6 +33,46 @@ DATASET_TITLES = {
     'airquality': 'New York Air Quality Measurements',
     'TeachingRatings': 'Impact of Beauty on Instructor\'s Teaching Ratings',
 }
+
+
+def create_prefect_flow_run(flow_id: str,
+                            params: Mapping) -> str:
+    """Creates new prefect flow run for given flow id, parameters,
+    and API server URL to send GraphQL requests to. Returns flow run id.
+    """
+
+    try:
+        client = prefect.Client()
+        flow_run_id = client.create_flow_run(flow_id=flow_id,
+                                             parameters=params)
+    except ClientError as e:
+        st.error(e)
+        raise e
+    return flow_run_id
+
+
+def get_prefect_results(flow_run_id: str,
+                        task_refs: List) -> State:
+    """Returns results and message from a Prefect flow run's State given flow
+    run id, task references, and API server URL to send GraphQL requests to.
+
+    Effects:
+    Writes ClientError or KeyError message to Streamlit app if error is raised.
+    """
+
+    try:
+        client = prefect.Client()
+        # Get flow run state
+        state = client.get_flow_run_state(flow_run_id=flow_run_id)
+        # Get results from flow run state
+        task_results = {ref: state.result[ref].result for ref in task_refs}
+    except ClientError as e:
+        st.error(e)
+        raise e
+    except KeyError as e:
+        st.error(e)
+        raise e
+    return task_results, state.message
 
 
 def sidebar():
@@ -151,11 +194,11 @@ def main():
     )
 
     # Example app
-    kwargs = sidebar()  # Display sidebar in Streamlit app
+    params = sidebar()  # Display sidebar in Streamlit app
     # Drop `data` and return its value
-    data = kwargs.pop('data')
+    data = params.pop('data')
     # Drop dataset `item` code and return its value
-    item = kwargs.pop('item')
+    item = params.pop('item')
     title = DATASET_TITLES[item]
     st.subheader(f'{title}')
     st.text('A random sample of 5 rows:')
@@ -185,11 +228,11 @@ def main():
         if pd.notna(data).all().all():
             st.warning('No missing values in dataset')
         else:
-            na_strategy = kwargs.get('na_strategy')
-            state = wrangle_na_pipeline.run(data=data,
-                                            na_strategy=na_strategy)
-            task_ref = wrangle_na_pipeline.get_tasks(name='wrangle_na')[0]
-            wrangled_data = state.result[task_ref].result
+            na_strategy = params.get('na_strategy')
+
+            flow_run_id = create_prefect_flow_run('wrangle_na_pipeline',
+                                                  {'strategy': na_strategy})
+            wrangled_data, _ = get_prefect_results(flow_run_id, ['wrangle_na'])
             st.write('')  # Insert blank line
             st.subheader('Wrangled Dataset')
             st.dataframe(wrangled_data)
@@ -197,41 +240,32 @@ def main():
     if col4.button('✨ Run workflow!'):
         st.write('---')
         # Stop execution until a valid endogenous variable is selected
-        if not(kwargs.get('endog')):
+        if not(params.get('endog')):
             st.warning('Please select an endogenous variable')
             st.stop()
-        state = e2e_pipeline.run(**kwargs)
-        state_msg = state.message  # Flow's outcome state's message
+        flow_id = 'e2e_pipeline'
+        flow_run_id = create_prefect_flow_run(flow_id, parameters=params)
+        task_refs = ['gelman_standardize_data', 'plot_confidence_intervals']
+        flow_results, state_msg = get_prefect_results(flow_run_id, task_refs)
         # Check if all tasks were successfully executed
         if 'fail' in state_msg:
             # List of each state's (name, state message) in the workflow
-            task_state_msgs = [(str(task), state.result[task].message) for task
-                               in state.result.keys()]
             st.warning(state_msg)
-            st.subheader('Workflow Logs')
-            st.text('Note: the tasks below are not ordered by their run order.'
-                    ' This will be fixed in a future version'
-                    ' of the boilerplate.')
-            task_state_table = (pd.DataFrame(task_state_msgs,
-                                             columns=['task', 'state message'])
-                                  .sort_values(by='task'))
-            st.table(task_state_table)
+            st.info('Please view the Flow logs on the Prefect Server\'s'
+                    ' [UI](localhost:8080).')
         # If all tasks were successfully executed
         else:
+            # Unpack results
+            preprocessed_data, conf_int_chart = flow_results
+            # Success!
+            st.balloons()
             st.success(state_msg)
-            st.subheader('Encoded Data')
-            # Retrieve wrangled data from prefect pipeline
-            task_name = 'encode_data'
-            task_ref = e2e_pipeline.get_tasks(name=task_name)[0]
-            encoded_data = state.result[task_ref].result
-            st.dataframe(encoded_data)
+            # Retrieve results from prefect flow run
+            st.subheader('Pre-processed Data')
+            st.dataframe(preprocessed_data)
             st.subheader('Regression Results')
             st.text('Dot and whisker plot of coefficients'
                     ' and their confidence intervals:')
-            # Retrieve result value from prefect pipeline
-            task_name = 'plot_confidence_intervals'
-            task_ref = e2e_pipeline.get_tasks(name=task_name)[0]
-            conf_int_chart = state.result[task_ref].result
             # Plot regression coefficient's confidence intervals
             st.altair_chart(conf_int_chart, use_container_width=True)
 
