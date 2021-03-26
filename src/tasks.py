@@ -409,7 +409,8 @@ def wrangle_na(data: pd.DataFrame,
         return data
 
     # Clean col names
-    cols = [clean_text(col) for col in cols]
+    if cols:
+        cols = [clean_text(col) for col in cols]
 
     # If no missing values
     if pd.notna(data).all().all():
