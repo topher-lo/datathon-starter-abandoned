@@ -6,6 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+# Prefect results
+client/results
+client/results/*
+
 # Distribution / packaging
 .Python
 build/

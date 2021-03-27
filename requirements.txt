@@ -8,3 +8,4 @@ streamlit
 streamlit-pandas-profiling
 scikit-learn
 flake8
+requests
