@@ -16,8 +16,10 @@ from .tasks import plot_confidence_intervals
 
 
 with Flow('wrangle_na_pipeline') as wrangle_na_pipeline:
-    data = Parameter('data', required=True)
+    url = Parameter('url', required=True)
+    sep = Parameter('sep', default=',')
     strategy = Parameter('strategy', default='cc')
+    data = retrieve_data(url, sep)
     wrangled_data = wrangle_na(data, strategy)
 
 

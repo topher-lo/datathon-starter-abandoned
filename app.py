@@ -7,14 +7,17 @@ import pandas as pd
 import prefect
 import streamlit as st
 import missingno as msno
+import time
 
 from pandas_profiling import ProfileReport
 from streamlit_pandas_profiling import st_profile_report
 from typing import List
 from typing import Mapping
 
-from prefect.client.client import ClientError
-from prefect.engine.state import State
+from prefect.client.client import Client
+
+from prefect.tasks.prefect.flow_run import StartFlowRun
+from prefect.engine.results.local_result import LocalResult
 
 
 R_DATASETS_URL = 'https://vincentarelbundock.github.io/Rdatasets'
@@ -35,44 +38,44 @@ DATASET_TITLES = {
 }
 
 
-def create_prefect_flow_run(flow_id: str,
+def create_prefect_flow_run(flow_name: str,
+                            project_name: str,
+                            task_refs: List,
                             params: Mapping) -> str:
-    """Creates new prefect flow run for given flow id, parameters,
-    and API server URL to send GraphQL requests to. Returns flow run id.
+    """Creates new prefect flow run for given flow id, parameters, task references
+    and API server URL to send GraphQL requests to.
+    Returns results value and state from a Prefect flow run.
     """
 
     try:
-        client = prefect.Client()
-        flow_run_id = client.create_flow_run(flow_id=flow_id,
-                                             parameters=params)
-    except ClientError as e:
-        st.error(e)
-        raise e
-    return flow_run_id
-
-
-def get_prefect_results(flow_run_id: str,
-                        task_refs: List) -> State:
-    """Returns results and message from a Prefect flow run's State given flow
-    run id, task references, and API server URL to send GraphQL requests to.
-
-    Effects:
-    Writes ClientError or KeyError message to Streamlit app if error is raised.
-    """
-
-    try:
-        client = prefect.Client()
-        # Get flow run state
-        state = client.get_flow_run_state(flow_run_id=flow_run_id)
-        # Get results from flow run state
-        task_results = {ref: state.result[ref].result for ref in task_refs}
-    except ClientError as e:
-        st.error(e)
-        raise e
-    except KeyError as e:
-        st.error(e)
-        raise e
-    return task_results, state.message
+        flow_run = StartFlowRun(flow_name=flow_name,
+                                project_name=project_name,
+                                parameters=params)
+        flow_run_id = flow_run.run()
+        client = Client()
+        while True:
+            time.sleep(10)
+            flow_run_info = client.get_flow_run_info(flow_run_id)
+            flow_state = flow_run_info.state
+            task_runs_info = flow_run_info.task_runs
+            if flow_state.is_finished():
+                task_res_locs = {}
+                for task_run in task_runs_info:
+                    # Return ref if ref string is a substring of any task slug
+                    ref = next((ref_str for ref_str in task_refs
+                                if ref_str in task_run.task_slug), None)
+                    if ref:
+                        task_id = task_run.id
+                        state = client.get_task_run_state(task_id)
+                        task_res_locs[ref] = state._result.location
+                task_results = {}
+                for ref, loc in task_res_locs.items():
+                    local_res = LocalResult()
+                    result = local_res.read(loc)
+                    task_results[ref] = result.value
+                return task_results, flow_state
+    except ValueError as err:
+        raise err
 
 
 def sidebar():
@@ -229,10 +232,16 @@ def main():
             st.warning('No missing values in dataset')
         else:
             na_strategy = params.get('na_strategy')
-
-            flow_run_id = create_prefect_flow_run('wrangle_na_pipeline',
-                                                  {'strategy': na_strategy})
-            wrangled_data, _ = get_prefect_results(flow_run_id, ['wrangle_na'])
+            flow_name = 'wrangle_na_pipeline'
+            project_name = 'streamlit-e2e-boilerplate'
+            task_refs = ['wrangle_na']
+            params = {'url': params.get('url'),
+                      'sep': params.get('sep'),
+                      'strategy': na_strategy}
+            wrangled_data, _ = create_prefect_flow_run(flow_name,
+                                                       project_name,
+                                                       task_refs,
+                                                       params)
             st.write('')  # Insert blank line
             st.subheader('Wrangled Dataset')
             st.dataframe(wrangled_data)
@@ -243,10 +252,16 @@ def main():
         if not(params.get('endog')):
             st.warning('Please select an endogenous variable')
             st.stop()
-        flow_id = 'e2e_pipeline'
-        flow_run_id = create_prefect_flow_run(flow_id, parameters=params)
-        task_refs = ['gelman_standardize_data', 'plot_confidence_intervals']
-        flow_results, state_msg = get_prefect_results(flow_run_id, task_refs)
+        flow_name = 'e2e_pipeline'
+        project_name = 'streamlit-e2e-boilerplate'
+        task_refs = ['wrangle_na']
+        params = {'url': params.get('url'),
+                  'sep': params.get('sep'),
+                  'strategy': na_strategy}
+        results, state_msg = create_prefect_flow_run(flow_name,
+                                                     project_name,
+                                                     task_refs,
+                                                     params)
         # Check if all tasks were successfully executed
         if 'fail' in state_msg:
             # List of each state's (name, state message) in the workflow
@@ -256,7 +271,7 @@ def main():
         # If all tasks were successfully executed
         else:
             # Unpack results
-            preprocessed_data, conf_int_chart = flow_results
+            preprocessed_data, conf_int_chart = results
             # Success!
             st.balloons()
             st.success(state_msg)
