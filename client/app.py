@@ -4,14 +4,20 @@ via `streamlit run app.py`.
 """
 
 import pandas as pd
+import prefect
 import streamlit as st
 import missingno as msno
+import time
 
 from pandas_profiling import ProfileReport
 from streamlit_pandas_profiling import st_profile_report
+from typing import List
+from typing import Mapping
 
-from src.pipeline import e2e_pipeline
-from src.pipeline import wrangle_na_pipeline
+from prefect.client.client import Client
+
+from prefect.tasks.prefect.flow_run import StartFlowRun
+from prefect.engine.results.local_result import LocalResult
 
 
 R_DATASETS_URL = 'https://vincentarelbundock.github.io/Rdatasets'
@@ -30,6 +36,46 @@ DATASET_TITLES = {
     'airquality': 'New York Air Quality Measurements',
     'TeachingRatings': 'Impact of Beauty on Instructor\'s Teaching Ratings',
 }
+
+
+def create_prefect_flow_run(flow_name: str,
+                            project_name: str,
+                            task_refs: List,
+                            params: Mapping) -> str:
+    """Creates new prefect flow run for given flow id, parameters, task references
+    and API server URL to send GraphQL requests to.
+    Returns results value and state from a Prefect flow run.
+    """
+
+    try:
+        flow_run = StartFlowRun(flow_name=flow_name,
+                                project_name=project_name,
+                                parameters=params)
+        flow_run_id = flow_run.run()
+        client = Client()
+        while True:
+            time.sleep(10)
+            flow_run_info = client.get_flow_run_info(flow_run_id)
+            flow_state = flow_run_info.state
+            task_runs_info = flow_run_info.task_runs
+            if flow_state.is_finished():
+                task_res_locs = {}
+                for task_run in task_runs_info:
+                    # Return ref if ref string is a substring of any task slug
+                    ref = next((ref_str for ref_str in task_refs
+                                if ref_str in task_run.task_slug), None)
+                    if ref:
+                        task_id = task_run.id
+                        state = client.get_task_run_state(task_id)
+                        task_res_locs[ref] = state._result.location
+                task_results = {}
+                for ref, loc in task_res_locs.items():
+                    local_res = LocalResult()
+                    result = local_res.read(loc)
+                    task_results[ref] = result.value
+                return task_results, flow_state
+    except ValueError as err:
+        raise err
 
 
 def sidebar():
@@ -65,24 +111,24 @@ def sidebar():
     st.success(f'Successfully loaded dataset: {dataset_item}')
     st.info(f'URL found [here]({url}). Documentation found [here]({doc}).')
 
-    is_cat = st.sidebar.multiselect('Are there any categorical variables?',
-                                       options=columns)
-    cols_transf = st.sidebar.multiselect('Select columns to transform',
-                                         options=columns)
+    cat_cols = st.sidebar.multiselect('Are there any categorical variables?',
+                                      options=columns)
+    transformed_cols = st.sidebar.multiselect('Select columns to transform',
+                                              options=columns)
     transf = st.sidebar.selectbox('Log or arcsinh transform?',
-                                 options=['log', 'arcsinh'])
+                                  options=['log', 'arcsinh'])
     endog = st.sidebar.selectbox('Select an endogenous variable'
                                  ' (must be numeric)',
                                  options=[None] + columns)
     exog = [col for col in columns if col != endog]
-    na_methods = {
+    na_strategies = {
         'Complete case': 'cc',
         'Fill-in': 'fi',
         'Fill-in with indicators': 'fii',
         'Grand model': 'gm',
         'MICE': 'mice',
     }
-    na_method_name = st.sidebar.selectbox(
+    na_strategy_name = st.sidebar.selectbox(
         'How should missing values be dealt with?',
         options=[
           'Complete case',
@@ -97,15 +143,15 @@ def sidebar():
         'Missing, missing, not found'
     )
     na_values = [s.strip() for s in na_values_string.split(',')]
-    na_method = na_methods[na_method_name]
+    na_strategy = na_strategies[na_strategy_name]
     return {'url': url,
-            'is_cat': is_cat,
-            'cols_transf': cols_transf,
+            'cat_cols': cat_cols,
+            'transformed_cols': transformed_cols,
             'transf': transf,
             'endog': endog,
             'exog': exog,
             'na_values': na_values,
-            'na_method': na_method,
+            'na_strategy': na_strategy,
             'data': data,
             'item': dataset_item}
 
@@ -133,8 +179,8 @@ def main():
         🙌 Build your own data app
 
         Modify pre-existing code and implement empty functions:\n
-        1. Data tasks are found in `src/tasks.py`
-        2. Data workflows are found in `src/pipeline.py`
+        1. Data tasks are found in `server/tasks.py`
+        2. Data workflows are found in `server/pipeline.py`
         3. The Streamlit app's UI code is found in `app.py`
         ---
         🚀 Try a quick example
@@ -151,11 +197,11 @@ def main():
     )
 
     # Example app
-    kwargs = sidebar()  # Display sidebar in Streamlit app
+    params = sidebar()  # Display sidebar in Streamlit app
     # Drop `data` and return its value
-    data = kwargs.pop('data')
+    data = params.pop('data')
     # Drop dataset `item` code and return its value
-    item = kwargs.pop('item')
+    item = params.pop('item')
     title = DATASET_TITLES[item]
     st.subheader(f'{title}')
     st.text('A random sample of 5 rows:')
@@ -185,53 +231,56 @@ def main():
         if pd.notna(data).all().all():
             st.warning('No missing values in dataset')
         else:
-            na_strategy = kwargs.get('na_strategy')
-            state = wrangle_na_pipeline.run(data=data,
-                                            na_strategy=na_strategy)
-            task_ref = wrangle_na_pipeline.get_tasks(name='wrangle_na')[0]
-            wrangled_data = state.result[task_ref].result
+            na_strategy = params.get('na_strategy')
+            flow_name = 'wrangle_na_pipeline'
+            project_name = 'streamlit-e2e-boilerplate'
+            task_refs = ['wrangle_na']
+            params = {'url': params.get('url'),
+                      'sep': params.get('sep'),
+                      'strategy': na_strategy}
+            results, _ = create_prefect_flow_run(flow_name,
+                                                 project_name,
+                                                 task_refs,
+                                                 params)
             st.write('')  # Insert blank line
             st.subheader('Wrangled Dataset')
-            st.dataframe(wrangled_data)
+            st.dataframe(results['wrangle_na'])
     # Run data workflow
     if col4.button('✨ Run workflow!'):
         st.write('---')
         # Stop execution until a valid endogenous variable is selected
-        if not(kwargs.get('endog')):
+        if not(params.get('endog')):
             st.warning('Please select an endogenous variable')
             st.stop()
-        state = e2e_pipeline.run(**kwargs)
-        state_msg = state.message  # Flow's outcome state's message
+        flow_name = 'e2e_pipeline'
+        project_name = 'streamlit-e2e-boilerplate'
+        task_refs = ['wrangle_na']
+        params = {'url': params.get('url'),
+                  'sep': params.get('sep'),
+                  'strategy': na_strategy}
+        results, state_msg = create_prefect_flow_run(flow_name,
+                                                     project_name,
+                                                     task_refs,
+                                                     params)
         # Check if all tasks were successfully executed
         if 'fail' in state_msg:
             # List of each state's (name, state message) in the workflow
-            task_state_msgs = [(str(task), state.result[task].message) for task
-                               in state.result.keys()]
             st.warning(state_msg)
-            st.subheader('Workflow Logs')
-            st.text('Note: the tasks below are not ordered by their run order.'
-                    ' This will be fixed in a future version'
-                    ' of the boilerplate.')
-            task_state_table = (pd.DataFrame(task_state_msgs,
-                                             columns=['task', 'state message'])
-                                  .sort_values(by='task'))
-            st.table(task_state_table)
+            st.info('Please view the Flow logs on the Prefect Server\'s'
+                    ' [UI](localhost:8080).')
         # If all tasks were successfully executed
         else:
+            # Unpack results
+            preprocessed_data, conf_int_chart = results
+            # Success!
+            st.balloons()
             st.success(state_msg)
-            st.subheader('Encoded Data')
-            # Retrieve wrangled data from prefect pipeline
-            task_name = 'encode_data'
-            task_ref = e2e_pipeline.get_tasks(name=task_name)[0]
-            encoded_data = state.result[task_ref].result
-            st.dataframe(encoded_data)
+            # Retrieve results from prefect flow run
+            st.subheader('Pre-processed Data')
+            st.dataframe(preprocessed_data)
             st.subheader('Regression Results')
             st.text('Dot and whisker plot of coefficients'
                     ' and their confidence intervals:')
-            # Retrieve result value from prefect pipeline
-            task_name = 'plot_confidence_intervals'
-            task_ref = e2e_pipeline.get_tasks(name=task_name)[0]
-            conf_int_chart = state.result[task_ref].result
             # Plot regression coefficient's confidence intervals
             st.altair_chart(conf_int_chart, use_container_width=True)
 
