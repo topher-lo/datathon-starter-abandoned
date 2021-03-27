@@ -35,13 +35,14 @@ streamlit-e2e-boilerplate has been tested with Python 3.8 and depends on the fol
 - `streamlit`
 - `streamlit-pandas-profiling`
 - `missingno`
+This boilerplate also depends on Prefect Server, which requires `docker` and `docker-compose` to be installed and running.
 
-To use the boilerplate, you must first clone this repo:
+To use the boilerplate, there are three steps. First, you clone this repo:
 ```bash
 git clone git@github.com:topher-lo/streamlit-e2e-boilerplate.git
 cd [..path/to/repo]
 ```
-Then install its dependencies using either pip:
+Second, install its dependencies using either pip:
 ```bash
 python3 -m venv env
 source env/bin/activate
@@ -58,6 +59,23 @@ Then run the following commands on your CLI:
 docker-compose build
 docker-compose up -d
 ```
+Lastly, configure Prefect for local orchestration:
+```bash
+prefect backend server
+```
+Then start the Prefect server:
+```bash
+prefect server start
+```
+And register all flows with the server by running:
+```bash
+python register_flows.py
+```
+Note that Prefect comes with a web-based UI for orchestrating and managing flows.
+Once the server's running, the UI can be viewed by visiting [localhost:8080](http://localhost:8080).
+Moreover, Prefect exposes a GraphQL API for interacting with the platform.
+The API can be accessed through [localhost:4200](http://localhost:4200).
+
 
 ## 🏁 Getting started
 To build your own app, modify pre-existing code and implement empty functions:
