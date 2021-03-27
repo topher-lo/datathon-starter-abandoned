@@ -121,14 +121,14 @@ def sidebar():
                                  ' (must be numeric)',
                                  options=[None] + columns)
     exog = [col for col in columns if col != endog]
-    na_methods = {
+    na_strategies = {
         'Complete case': 'cc',
         'Fill-in': 'fi',
         'Fill-in with indicators': 'fii',
         'Grand model': 'gm',
         'MICE': 'mice',
     }
-    na_method_name = st.sidebar.selectbox(
+    na_strategy_name = st.sidebar.selectbox(
         'How should missing values be dealt with?',
         options=[
           'Complete case',
@@ -143,7 +143,7 @@ def sidebar():
         'Missing, missing, not found'
     )
     na_values = [s.strip() for s in na_values_string.split(',')]
-    na_method = na_methods[na_method_name]
+    na_strategy = na_strategies[na_strategy_name]
     return {'url': url,
             'cat_cols': cat_cols,
             'transformed_cols': transformed_cols,
@@ -151,7 +151,7 @@ def sidebar():
             'endog': endog,
             'exog': exog,
             'na_values': na_values,
-            'na_method': na_method,
+            'na_strategy': na_strategy,
             'data': data,
             'item': dataset_item}
 
@@ -238,13 +238,13 @@ def main():
             params = {'url': params.get('url'),
                       'sep': params.get('sep'),
                       'strategy': na_strategy}
-            wrangled_data, _ = create_prefect_flow_run(flow_name,
-                                                       project_name,
-                                                       task_refs,
-                                                       params)
+            results, _ = create_prefect_flow_run(flow_name,
+                                                 project_name,
+                                                 task_refs,
+                                                 params)
             st.write('')  # Insert blank line
             st.subheader('Wrangled Dataset')
-            st.dataframe(wrangled_data)
+            st.dataframe(results['wrangle_na'])
     # Run data workflow
     if col4.button('✨ Run workflow!'):
         st.write('---')

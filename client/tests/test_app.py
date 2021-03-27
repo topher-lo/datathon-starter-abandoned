@@ -37,7 +37,7 @@ def test_create_prefect_flow_run(tmp_data_directory):
         'x1': [1, 0, 1, 1],
         'x2': [3, np.nan, 1, 2],
         'x3': ['A', 'B', 'C', 'A']
-    }).dropna()
+    }).dropna()  # Complete case strategy
     # Delete tmpdir if smoke test succeeds
     shutil.rmtree(str(tmpdir))
     # Assertions
