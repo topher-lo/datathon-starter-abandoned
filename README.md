@@ -23,7 +23,6 @@ I made this project with two aims. First, as starter code for my own data projec
 - Custom [altair](https://altair-viz.github.io/) themes that match Streamlit's UI
 - Fully documented functions, modules, and code (using inline comments)
 - Containerised using docker and docker-compose
-- Github Actions workflow for automated deployment to the Heroku Container Registry
 
 ## Install
 streamlit-e2e-boilerplate has been tested with Python 3.8 and depends on the following packages:
@@ -59,22 +58,27 @@ Then run the following commands on your CLI:
 docker-compose build
 docker-compose up -d
 ```
-Lastly, configure Prefect for local orchestration:
+Lastly, set-up Prefect Server and deploy flows.
+1. Configure Prefect for local orchestration:
 ```bash
 prefect backend server
 ```
-Then start the Prefect server:
+2. Start the Prefect Server:
 ```bash
 prefect server start
 ```
-And register all flows with the server by running:
+3. Register all flows with the server by running:
 ```bash
 python register_flows.py
 ```
+4. Start a Prefect Agent to execute and monitor Flow runs:
+```bash
+prefect agent start
+```
 Note that Prefect comes with a web-based UI for orchestrating and managing flows.
-Once the server's running, the UI can be viewed by visiting [localhost:8080](http://localhost:8080).
+Once the server's running, this UI can be viewed by visiting [localhost:8080](http://localhost:8080).
 Moreover, Prefect exposes a GraphQL API for interacting with the platform.
-The API can be accessed through [localhost:4200](http://localhost:4200).
+This API can be accessed through [localhost:4200](http://localhost:4200).
 
 
 ## 🏁 Getting started
