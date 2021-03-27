@@ -92,43 +92,6 @@ streamlit run app.py
 The web app will be available at http://localhost:8501/
 Otherwise, if you are using docker, the web app will be available at whichever port you specified in the `.env` file.
 
-## 🗃️ Directory structure
-```
-├── streamlit-e2e-boilerplate
-    ├── client
-    │   ├── app.py
-    │   ├── __init__.py
-    │   ├── results
-    │   └── tests
-    │       ├── __init__.py
-    │       └── test_app.py
-    ├── conftest.py
-    ├── CONTRIBUTING.md
-    ├── docker-compose.yml
-    ├── Dockerfile
-    ├── .gitignore
-    ├── LICENSE
-    ├── pipeline.ini
-    ├── pytest.ini
-    ├── README.md
-    ├── register_flows.py
-    ├── requirements-dev.txt
-    ├── requirements.txt
-    └── server
-        ├── client
-        │   └── results
-        ├── __init__.py
-        ├── pipeline.py
-        ├── styles
-        │   ├── altair.py
-        │   └── __init__.py
-        ├── tasks.py
-        ├── tests
-        │   ├── __init__.py
-        │   └── test_tasks.py
-        └── utils.py
-```
-
 ## Contributing
 Found a bug? Wrote a patch? Want to add a new feature, suggest changes to the API, or improve the docs? Please checkout the brief [contribution guide](https://github.com/topher-lo/streamlit-e2e-boilerplate/blob/main/CONTRIBUTING.md). Any and all contributions are welcome. ❤️📊🙌
 
