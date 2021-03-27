@@ -13,13 +13,16 @@ from numpy.testing import assert_equal
 
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 
-from src.tasks import _column_wrangler
-from src.tasks import _obj_wrangler
-from src.tasks import _factor_wrangler
-from src.tasks import clean_data
-from src.tasks import wrangle_na
-from src.tasks import run_model
-from src.tasks import plot_confidence_intervals
+from server.tasks import _column_wrangler
+from server.tasks import _obj_wrangler
+from server.tasks import _factor_wrangler
+from server.tasks import clean_data
+from server.tasks import wrangle_na
+from server.tasks import run_model
+from server.tasks import transform_data
+from server.tasks import encode_data
+from server.tasks import gelman_standardize_data
+from server.tasks import plot_confidence_intervals
 
 
 # TESTCASES
@@ -178,9 +181,9 @@ def test_factor_wrangler(data_examples):
     """
 
     data = data_examples['iraq_vote'].copy()
-    is_cat = ['state.abb', 'state.name']
+    cat_cols = ['state.abb', 'state.name']
     result = _factor_wrangler(data,
-                              is_cat,
+                              cat_cols,
                               str_to_cat=False,
                               dummy_to_bool=False)
     result_cols = (result.select_dtypes(include=['category'])
@@ -194,45 +197,64 @@ def test_factor_wrangler_ordered(data_examples):
     """
 
     data = data_examples['us_consump_1940s'].copy()
+    cba_list = ['E', 'D', 'C', 'B', 'A']*2
+    data.loc[:, 'cba'] = cba_list
     # Reverse order
     data = data.iloc[::-1]
-    ordered_cat_cols = ['year']
+    ordered_cols = ['year', 'cba']
     result = _factor_wrangler(data,
-                              is_cat=ordered_cat_cols,
-                              is_ordered=ordered_cat_cols,
+                              cat_cols=ordered_cols,
+                              ordered_cols=ordered_cols,
                               str_to_cat=False,
                               dummy_to_bool=False)
-    result_cat = result.loc[:, 'year'].cat
-    expected = pd.Index([i for i in range(1940, 1950)])
-    assert_index_equal(result_cat.categories, expected)
-    assert result_cat.ordered
+    year_result_cat = result.loc[:, 'year'].cat
+    cba_result_cat = result.loc[:, 'cba'].cat
+    year_expected = pd.Index([i for i in range(1940, 1950)])
+    cba_expected = pd.Index(['A', 'B', 'C', 'D', 'E'])
+    # Assertions
+    assert_index_equal(year_result_cat.categories, year_expected)
+    assert_index_equal(cba_result_cat.categories, cba_expected)
+    assert year_result_cat.ordered
+    assert cba_result_cat.ordered
 
 
 def test_factor_wrangler_cats():
     """Columns in `categories` only contain enumerated values.
+    The ordering of categories follow the corresponding list in `categories`.
     """
 
     data = pd.DataFrame({
         'non_neg': [-1, 0, 1, 2, 3],
         'only_alpha': ['A#', 'B', 'C', 'D', '10'],
+        'only_alpha_r': ['A#', 'B', 'C', 'D', '10'],
     })
     categories = {
         'non_neg': [0, 1, 2, 3],
-        'only_alpha': ['A', 'B', 'C', 'D']
+        'only_alpha': ['A', 'B', 'C', 'D'],
+        'only_alpha_r': ['D', 'C', 'B', 'A']
     }
+    cat_cols = ['non_neg', 'only_alpha', 'only_alpha_r']
+    ordered_cols = ['only_alpha_r']
     result = _factor_wrangler(data,
-                              is_cat=['non_neg', 'only_alpha'],
+                              cat_cols,
+                              ordered_cols,
                               categories=categories,
                               str_to_cat=False,
                               dummy_to_bool=False)
     expected = pd.DataFrame({
         'non_neg': [pd.NA, 0, 1, 2, 3],
-        'only_alpha': [pd.NA, 'B', 'C', 'D', pd.NA]
+        'only_alpha': [pd.NA, 'B', 'C', 'D', pd.NA],
+        'only_alpha_r': [pd.NA, 'B', 'C', 'D', pd.NA]
     }).astype('category')
     expected.loc[:, 'only_alpha'] = (
         expected.loc[:, 'only_alpha']
         .cat
         .set_categories(categories['only_alpha'])
+    )
+    expected.loc[:, 'only_alpha_r'] = (
+        expected.loc[:, 'only_alpha_r']
+        .cat.set_categories(categories['only_alpha_r'])
+        .cat.as_ordered()
     )
     assert_frame_equal(result, expected)
 
@@ -291,7 +313,7 @@ def test_wrangle_na(data_examples):
     data = data_examples['airquality_na'].copy()
     expected_shape = np.asarray((6, 4))
     expected = pd.Index([0, 1, 2, 6, 7, 8])
-    result = wrangle_na.run(data, method='cc')
+    result = wrangle_na.run(data, strategy='cc')
     assert_equal(expected_shape, result.shape)
     assert_index_equal(expected, result.index)
 
@@ -309,14 +331,14 @@ def test_wrangle_na_fi():
               'bool_x': 'boolean'}
     data = pd.DataFrame({
         'int_x': [1, 2, np.nan, 4],  # Median = 2
-        'float_x': [1.5, np.nan, 2.5, 2.0],  # Mean = 1.5
+        'float_x': [1.5, np.nan, 2.5, 2.0],  # Mean = 2.0
         'cat_x': ['A', 'A', 'B', pd.NA],  # Most freq = 'A'
         'bool_x': [False, True, False, pd.NA]  # Most freq = False
     }).astype(dtypes)
-    result = wrangle_na.run(data, method='fi')
+    result = wrangle_na.run(data, strategy='fi')
     expected = pd.DataFrame({
         'int_x': [1, 2, 2, 4],
-        'float_x': [1.5, 1.5, 2.5, 2.0],
+        'float_x': [1.5, 2.0, 2.5, 2.0],
         'cat_x': ['A', 'A', 'B', 'A'],
         'bool_x': [False, True, False, False]
     }).astype(dtypes)
@@ -334,17 +356,17 @@ def test_wrangle_na_fii():
               'bool_x': 'boolean'}
     data = pd.DataFrame({
         'int_x': [1, 2, np.nan, 4],  # Median = 2
-        'float_x': [1.5, np.nan, 2.5, 2.0],  # Mean = 1.5
+        'float_x': [1.5, np.nan, 2.5, 2.0],  # Mean = 2.0
         'cat_x': ['A', 'A', 'B', pd.NA],  # Most freq = 'A'
         'bool_x': [False, True, False, pd.NA]  # Most freq = False
     }).astype(dtypes)
-    result = wrangle_na.run(data, method='fii')
+    result = wrangle_na.run(data, strategy='fii')
     dummy_dtypes = {'na_1000': 'boolean',
                     'na_0100': 'boolean',
                     'na_0011': 'boolean'}
     expected = pd.DataFrame({
         'int_x': [1, 2, 2, 4],
-        'float_x': [1.5, 1.5, 2.5, 2.0],
+        'float_x': [1.5, 2.0, 2.5, 2.0],
         'cat_x': ['A', 'A', 'B', 'A'],
         'bool_x': [False, True, False, False],
         'na_1000': [0, 0, 1, 0],
@@ -366,11 +388,11 @@ def test_wrangle_na_gm():
               'bool_x': 'boolean'}
     data = pd.DataFrame({
         'int_x': [1, 2, np.nan, 4],  # Median = 2
-        'float_x': [1.5, np.nan, 2.5, 2.0],  # Mean = 1.5
+        'float_x': [1.5, np.nan, 2.5, 2.0],  # Mean = 2.0
         'cat_x': ['A', 'A', 'B', pd.NA],  # Most freq = 'A'
         'bool_x': [False, True, False, pd.NA]  # Most freq = False
     }).astype(dtypes)
-    result = wrangle_na.run(data, method='gm')
+    result = wrangle_na.run(data, strategy='gm')
     dummy_dtypes = {'na_1000': 'boolean',
                     'na_0100': 'boolean',
                     'na_0011': 'boolean',
@@ -388,7 +410,7 @@ def test_wrangle_na_gm():
                     'Q("bool_x"):Q("na_0011")': 'boolean'}
     expected = pd.DataFrame({
         'int_x': [1, 2, 2, 4],
-        'float_x': [1.5, 1.5, 2.5, 2.0],
+        'float_x': [1.5, 2.0, 2.5, 2.0],
         'cat_x': ['A', 'A', 'B', 'A'],
         'bool_x': [False, True, False, False],
         'na_1000': [0, 0, 1, 0],
@@ -397,9 +419,9 @@ def test_wrangle_na_gm():
         'Q("int_x"):Q("na_1000")': [1, 2, pd.NA, 4],
         'Q("int_x"):Q("na_0100")': [1, pd.NA, 2, 4],
         'Q("int_x"):Q("na_0011")': [1, 2, 2, pd.NA],
-        'Q("float_x"):Q("na_1000")': [1.5, 1.5, np.nan, 2.0],
+        'Q("float_x"):Q("na_1000")': [1.5, 2.0, np.nan, 2.0],
         'Q("float_x"):Q("na_0100")': [1.5, np.nan, 2.5, 2.0],
-        'Q("float_x"):Q("na_0011")': [1.5, 1.5, 2.5, np.nan],
+        'Q("float_x"):Q("na_0011")': [1.5, 2.0, 2.5, np.nan],
         'Q("cat_x"):Q("na_1000")': ['A', 'A', pd.NA, 'A'],
         'Q("cat_x"):Q("na_0100")': ['A', pd.NA, 'B', 'A'],
         'Q("cat_x"):Q("na_0011")': ['A', 'A', 'B', pd.NA],
@@ -418,12 +440,175 @@ def test_wrangle_na_mice(fake_regression_data):
     pass
 
 
+def test_transform_data_log():
+    """Values in DataFrame are log transformed.
+    """
+
+    dtypes = {
+        'float_x': 'float',
+        'int_x': 'Int64',
+        'nan_x': 'float',
+        'int_na_x': 'Int64',
+        'empty_x': 'string',
+    }
+    data = pd.DataFrame({
+        'float_x': [1.1, 2.2, 3.3, 4.4],
+        'int_x': [1, 9, 8, 4],
+        'nan_x': [1.1, np.nan, 3.3, np.nan],
+        'int_na_x': [pd.NA, 9, 8, pd.NA],
+        'empty_x': ['Do', 'not', 'select', 'me']
+    }).astype(dtypes)
+    cols = ['float_x', 'int_x', 'nan_x', 'int_na_x']
+    # Result
+    result = transform_data.run(data, cols, func='log')
+    expected_dtypes = {
+        'float_x': 'float',
+        'int_x': 'Float64',
+        'nan_x': 'float',
+        'int_na_x': 'Float64',
+        'empty_x': 'string',
+    }
+    expected = pd.DataFrame({
+        'float_x': [np.log(1.1), np.log(2.2), np.log(3.3), np.log(4.4)],
+        'int_x': [np.log(1), np.log(9), np.log(8), np.log(4)],
+        'nan_x': [np.log(1.1), np.nan, np.log(3.3), np.nan],
+        'int_na_x': [pd.NA, np.log(9), np.log(8), pd.NA],
+        'empty_x': ['Do', 'not', 'select', 'me']
+    }).astype(expected_dtypes)
+    assert_frame_equal(result, expected)
+
+
+def test_transform_data_arcsinh():
+    """Values in DataFrame are arcsinh transformed.
+    """
+
+    dtypes = {
+        'float_x': 'float',
+        'int_x': 'Int64',
+        'nan_x': 'float',
+        'int_na_x': 'Int64',
+        'empty_x': 'string',
+    }
+    data = pd.DataFrame({
+        'float_x': [1.1, 2.2, 3.3, 4.4],
+        'int_x': [1, 9, 8, 4],
+        'nan_x': [1.1, np.nan, 3.3, np.nan],
+        'int_na_x': [pd.NA, 9, 8, pd.NA],
+        'empty_x': ['Do', 'not', 'select', 'me']
+    }).astype(dtypes)
+    cols = ['float_x', 'int_x', 'nan_x', 'int_na_x']
+    # Result
+    result = transform_data.run(data, cols, func='arcsinh')
+    expected_dtypes = {
+        'float_x': 'float',
+        'int_x': 'Float64',
+        'nan_x': 'float',
+        'int_na_x': 'Float64',
+        'empty_x': 'string',
+    }
+    expected = pd.DataFrame({
+        'float_x': [
+            np.arcsinh(1.1),
+            np.arcsinh(2.2),
+            np.arcsinh(3.3),
+            np.arcsinh(4.4)
+        ],
+        'int_x': [
+            np.arcsinh(1),
+            np.arcsinh(9),
+            np.arcsinh(8),
+            np.arcsinh(4)
+        ],
+        'nan_x': [np.arcsinh(1.1), np.nan, np.arcsinh(3.3), np.nan],
+        'int_na_x': [pd.NA, np.arcsinh(9), np.arcsinh(8), pd.NA],
+        'empty_x': ['Do', 'not', 'select', 'me']
+    }).astype(expected_dtypes)
+    assert_frame_equal(result, expected)
+
+
+def test_transform_data_zero():
+    """Raises ValueError given zero values in DataFrame and
+    transf specified as log.
+    """
+
+    dtypes = {
+        'float_x': 'float',
+        'int_x': 'Int64',
+        'zero_x': 'float',
+    }
+    data = pd.DataFrame({
+        'float_x': [1.1, 2.2, 3.3, 4.4],
+        'int_x': [1, 9, 8, 4],
+        'zero_x': [0.0, 1.1, 2.2, 3.3],
+    }).astype(dtypes)
+    with pytest.raises(ValueError, match=r'.*Cannot take logs.*'):
+        cols = ['float_x', 'int_x', 'zero_x']
+        result = transform_data.run(data, cols, func='log')  # noqa
+
+
 def test_gelman_standardize_data():
-    """Numeric columns are divided by 2 s.d. and mean-centere.
+    """Numeric columns are divided by 2 s.d. and mean-centered.
     Boolean columns are shifted to have mean zero.
     All other columns are unchanged.
     """
-    pass
+
+    dtypes = {
+        'float_x': 'float',
+        'int_x': 'Int64',
+        'int_na_x': 'Int64',
+        'bool_x': 'boolean',
+        'cat_x': 'category',  # Should remain unchanged
+        'string_x': 'string'  # Should remain unchanged
+    }
+    data = pd.DataFrame({
+        'float_x': [2.2, 3.3, 1.1, 5.5, np.nan],  # mean=3.025, std=1.878607
+        'int_x': [2, 3, 1, 4, 5],
+        'int_na_x': [2, 3, 1, pd.NA, 5],  # mean=2.75, std=1.707925
+        'bool_x': [False, False, True, True, False],  # mean = 0.4
+        'cat_x': ['A', 'B', 'C', 'D', 'E'],
+        'string_x': ['This', 'should', 'be', 'unchanged', '.']
+    }).astype(dtypes)
+    float_x_mean, float_x_std = data['float_x'].mean(), 2*data['float_x'].std()
+    int_x_mean, int_x_std = data['int_x'].mean(), 2*data['int_x'].std()
+    int_na_x_mean = data['int_na_x'].mean()
+    int_na_x_std = 2*data['int_na_x'].std()
+    # Result
+    result = gelman_standardize_data.run(data)
+    expected_dtypes = {
+        'float_x': 'float',
+        'int_x': 'Float64',
+        'int_na_x': 'Float64',
+        'bool_x': 'Float64',
+        'cat_x': 'category',  # Should remain unchanged
+        'string_x': 'string'  # Should remain unchanged
+    }
+    expected = pd.DataFrame({
+        'float_x': [
+            (2.2-float_x_mean)/float_x_std,
+            (3.3-float_x_mean)/float_x_std,
+            (1.1-float_x_mean)/float_x_std,
+            (5.5-float_x_mean)/float_x_std,
+            np.nan
+        ],
+        'int_x': [
+            (2-int_x_mean)/int_x_std,
+            (3-int_x_mean)/int_x_std,
+            (1-int_x_mean)/int_x_std,
+            (4-int_x_mean)/int_x_std,
+            (5-int_x_mean)/int_x_std
+        ],
+        'int_na_x': [
+            (2-int_na_x_mean)/int_na_x_std,
+            (3-int_na_x_mean)/int_na_x_std,
+            (1-int_na_x_mean)/int_na_x_std,
+            pd.NA,
+            (5-int_na_x_mean)/int_na_x_std
+        ],
+        'bool_x': [-0.4, -0.4, 0.6, 0.6, -0.4],
+        'cat_x': ['A', 'B', 'C', 'D', 'E'],
+        'string_x': ['This', 'should', 'be', 'unchanged', '.']
+    }).astype(expected_dtypes)
+    assert_frame_equal(result, expected)
 
 
 def test_run_model(fake_regression_data) -> alt.Chart:

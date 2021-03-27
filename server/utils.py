@@ -1,6 +1,7 @@
 """Utility functions used in `streamlit-e2e-boilerplate`.
 """
 
+import os
 import re
 
 
@@ -12,6 +13,19 @@ def clean_text(text: str):
     """
     clean_text = re.sub(' +', '_', text.strip()).lower()
     return clean_text
+
+
+def make_path(path: str) -> str:
+    """Make directory.
+    Args:
+        path (str): 
+            Path to be made if it doesn't exist.
+    Returns:
+        path (str)
+    """
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
 
 
 if __name__ == "__main__":

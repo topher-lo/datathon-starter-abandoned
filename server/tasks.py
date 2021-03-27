@@ -21,7 +21,10 @@ Empty function
 6. `clean_data`:
 A pandas pipeline of data wranglers.
 
-7. `wrangle_na`:
+7. `encode_data`:
+Transforms columns with `category` dtype into columns of dummies.
+
+8. `wrangle_na`:
 Wrangles missing values. 5 available strategies:
 - Complete case
 - Fill-in
@@ -29,11 +32,8 @@ Wrangles missing values. 5 available strategies:
 - Grand model
 - MICE
 
-8. `transform_data`:
+9. `transform_data`:
 Applies transformations on data.
-
-9. `encode_data`:
-Transforms columns with `category` dtype into columns of dummies.
 
 10. `gelman_standardize_data`:
 Standardizes data by dividing by 2 standard deviations and mean-centering them.
@@ -76,10 +76,10 @@ from typing import Mapping
 from .utils import clean_text
 
 from sklearn.impute import SimpleImputer
+from .styles.altair import streamlit_theme
 
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 from statsmodels.imputation.mice import MICEData
-from src.styles.altair import streamlit_theme
 from pandas.api.types import is_categorical_dtype
 from pandas.api.types import is_float_dtype
 
@@ -161,8 +161,8 @@ def _obj_wrangler(data: pd.DataFrame) -> pd.DataFrame:
 
 def _factor_wrangler(
     data: pd.DataFrame,
-    is_cat: Union[None, List[str]] = None,
-    is_ordered: Union[None, List[str]] = None,
+    cat_cols: Union[None, List[str]] = None,
+    ordered_cols: Union[None, List[str]] = None,
     categories: Union[None, Mapping[str, List[Union[str, int, float]]]] = None,
     str_to_cat: bool = True,
     dummy_to_bool: bool = True,
@@ -175,15 +175,17 @@ def _factor_wrangler(
        Otherwise, the columns must either be specified in `is_cat`, is a string
        column and `str_to_cat` is True, or is a boolean column and
        `dummy_to_bool` is True.
+    3. All column names are in a consistent format(see `clean_text`
+       in `utils.py`)
 
     Args:
         data (pd.DataFrame): 
             The data.
 
-        is_cat (list of str): 
+        cat_cols (list of str): 
             List of columns to convert to `CategoricalDtype`.
 
-        is_ordered (list of str): 
+        ordered_cols (list of str): 
             List of categorical columns to declare to have an ordered
             relationship between its categories. If column is not specified
             in `categories` argument, then the column's categories are set in
@@ -211,12 +213,12 @@ def _factor_wrangler(
         are unchanged.
     """
 
-    cat_cols = []
+    all_cat_cols = []
     if str_to_cat:
         str_cols = (data.select_dtypes(include=['string'])
                         .columns
                         .tolist())
-        cat_cols += str_cols
+        all_cat_cols += str_cols
     if dummy_to_bool:
         # Select columns with [0, 1] (integer or float) values only
         sum_cols = (data.select_dtypes(include=['integer', 'float'])
@@ -234,11 +236,11 @@ def _factor_wrangler(
         data.loc[:, mask] = (data.loc[:, mask]
                                  .astype('boolean'))
 
-    if is_cat:
-        is_cat = [clean_text(col) for col in is_cat]  # Clean col names
-        cat_cols += is_cat
     if cat_cols:
-        for col in cat_cols:
+        cat_cols = [clean_text(col) for col in cat_cols]  # Clean col names
+        all_cat_cols += cat_cols
+    if all_cat_cols:
+        for col in all_cat_cols:
             data.loc[:, col] = (data.loc[:, col]
                                     .astype('category'))
     # Set categories
@@ -250,9 +252,10 @@ def _factor_wrangler(
                                     .cat
                                     .set_categories(cats))
     # Set is_ordered
-    if is_ordered:
-        is_ordered = [clean_text(col) for col in is_ordered]  # Clean col names
-        for cat in is_ordered:
+    if ordered_cols:
+        # Clean col names
+        ordered_cols = [clean_text(col) for col in ordered_cols]
+        for col in ordered_cols:
             data.loc[:, col] = (data.loc[:, col]
                                     .cat
                                     .as_ordered())
@@ -271,8 +274,8 @@ def _check_model_assumptions(data: pd.DataFrame) -> pd.DataFrame:
 def clean_data(
     data: pd.DataFrame,
     na_values: Union[None, List[Union[str, int, float]]] = None,
-    is_cat: Union[None, List[str]] = None,
-    is_ordered: Union[None, List[str]] = None,
+    cat_cols: Union[None, List[str]] = None,
+    ordered_cols: Union[None, List[str]] = None,
     categories: Union[None, Mapping[str, List[Union[str, int, float]]]] = None,
     str_to_cat: bool = True,
     dummy_to_bool: bool = True,
@@ -290,218 +293,12 @@ def clean_data(
                 .pipe(_column_wrangler)
                 .pipe(_obj_wrangler)
                 .pipe(_factor_wrangler,
-                      is_cat,
-                      is_ordered,
+                      cat_cols,
+                      ordered_cols,
                       categories,
                       str_to_cat,
                       dummy_to_bool)
                 .pipe(_check_model_assumptions))
-    return data
-
-
-@task
-def wrangle_na(data: pd.DataFrame,
-               method: str,
-               cols: Union[None, List[str]] = None,
-               **kwargs) -> pd.DataFrame:
-    """Wrangles missing values in `data` according to the
-    strategy specified in `method`.
-
-    Pre-conditions:
-    1. All columns are cast as a nullable dtype in Pandas.
-    2. All columns contain at most 1 nullable dtype (this condition
-       should follow if 1. holds).
-
-    Available methods:
-
-    1. "cc" -- Complete case: 
-        Drops all missing values.
-
-    2. "fi" -- Fill-in: 
-        Imputes missing values.
-
-    3. "fii" --Fill-in with indicators: 
-        Imputes missing values; creates indicator columns for patterns of
-        missing values across feature columns.
-
-    4. "gm" -- Fill-in with indicators and interactions (AKA grand model): 
-        Imputes missing values; creates indicator columns akin to strategy 3;
-        creates additional missing value indictor columns for the complete set
-        of interactions between features and the missing value indicators.
-        Missing value indicators have the same dtype as their corresponding
-        feature columns.
-
-    5. "mice" -- Multiple imputation with chained equations: 
-        Performs MICE procedure. Returns each imputed dataset from N draws of
-        the original dataset. Optional arguments to specify in `kwargs`:
-
-        - `n_burnin`: 
-            First `n_burnin` MICE iterations to skip; defaults to 20.
-        - `n_imputations`: 
-            Number of MICE iterations to save after burn-in phase;
-            defaults to 10.
-        - `n_spread`: 
-            Number of MICE iterations to skip between saved imputations;
-            defaults to 20.
-
-    Note 1. `**kwargs` contains required or optional keyword arguments for
-    `sklearn.preprocessing.SimpleImputer` and
-    `statsmodels.imputation.mice.MICEData`.
-
-    Note 2. By default for "fi", "fii", and "gm", missing values in
-    float columns are replaced by the mean along the column. Missing values
-    in integer columns are replaced by the median along the column.
-    Missing values in categorical and boolean columns are replaced by the most
-    frequent value along the column.
-
-    Note 3. Indicator columns are cast as `BooleanDtype`.
-
-    Key post-condition: column dtypes are unchanged.
-    """
-
-    # If no missing values
-    if pd.notna(data).all().all():
-        return data
-
-    # If complete case
-    if method == 'cc':
-        data = data.dropna(**kwargs)
-
-    # If fill-in with indicators or grand model
-    if method in ['fii', 'gm']:
-        # Create indicator columns for patterns of na
-        na_indicators = (data.applymap(lambda x: '1' if pd.isna(x) else '0')
-                             .agg(''.join, axis=1)
-                             .pipe(pd.get_dummies)
-                             .add_prefix('na_'))
-        data = data.join(na_indicators)
-
-    # If fill-in (or related)
-    if method in ['fi',  'fii', 'gm']:
-        # SimpleImputer (numeric columns)
-        # If kwargs not specified
-        if not(kwargs):
-            # SimpleImputer (floats)
-            float_kwargs = {'strategy': 'mean'}
-            float_cols = data.select_dtypes(include=['float']).columns
-            if any(float_cols):
-                data.loc[:, float_cols] = (
-                    data.loc[:, float_cols].pipe(SimpleImputer(**float_kwargs)
-                                                 .fit_transform))
-            # SimpleImputer (integer)
-            int_kwargs = {'strategy': 'median'}
-            int_cols = data.select_dtypes(include=['integer']).columns
-            if any(int_cols):
-                data.loc[:, int_cols] = (
-                    data.loc[:, int_cols].pipe(SimpleImputer(**int_kwargs)
-                                               .fit_transform)
-                )
-            # SimpleImputer (categorical and boolean columns)
-            fact_kwargs = {'strategy': 'most_frequent'}
-            fact_cols = (data.select_dtypes(include=['category', 'boolean'])
-                             .columns)
-            if any(fact_cols):
-                data.loc[:, fact_cols] = (
-                    data.loc[:, fact_cols].pipe(SimpleImputer(**fact_kwargs)
-                                                .fit_transform))
-
-        # If kwargs and cols specified
-        elif kwargs and cols:
-            data.loc[:, cols] = (data.loc[:, cols]
-                                     .pipe(SimpleImputer(**kwargs)
-                                           .fit_transform))
-        # If kwargs specified
-        else:
-            data = data.pipe(SimpleImputer(**kwargs).fit_transform)
-
-    # If grand model
-    if method == 'gm':
-        # Get interactions between features and na_indicators
-        na_cols = [col for col in data.columns if col.startswith('na_')]
-        feature_cols = [col for col in data.columns if col not in na_cols]
-        # Convert to non-nullable dtypes
-        temp_data = pd.DataFrame(data[feature_cols + na_cols]
-                                 .to_numpy()).infer_objects()
-        temp_data.columns = feature_cols + na_cols
-        # Get interactions
-        interaction_terms = list(itertools.product(feature_cols, na_cols))
-        interaction_formula = ' + '.join(
-            ['Q("{}"):Q("{}")'.format(*term) for term
-             in interaction_terms]
-        ) + '-1'
-        interactions = dmatrix(interaction_formula,
-                               temp_data,
-                               return_type='dataframe')
-        data = data.join(interactions)
-
-    # If MICE
-    if method == 'mice':
-        # Label encode columns
-        column_codes = pd.Categorical(data.columns)
-        # Dictionary codes label
-        col_code_map = dict(enumerate(column_codes.categories))
-        # Rename columns to standardized terms for patsy
-        data.columns = [f'col{c}' for c in column_codes.codes]
-        imputer = MICEData(data, **kwargs)
-        n_burnin = kwargs.get('n_burnin', 20)
-        n_imputations = kwargs.get('n_imputations', 10)
-        n_spread = kwargs.get('n_spread', 20)
-        imputed_datasets = []
-        # Draw n_burnin + n_imputations + n_imputations * n_spread
-        # MICE iterations
-        for i in range(n_imputations + 1):
-            if i == 0:
-                # Burn-in phase
-                imputer.update_all(n_iter=n_burnin)
-            else:
-                # Imputation phase
-                # Select final update after n_spread iterations
-                imputer.update_all(n_iter=n_spread)
-                imputed_datasets.append(imputer.data)
-        data = pd.concat(imputed_datasets,
-                         keys=list(range(n_imputations)))
-        data.index = data.index.set_names(['iter', 'index'])
-        # Inverse label encode columns
-        data.columns = [col_code_map[int(c[3:])] for c
-                        in data.columns]
-    return data
-
-
-@task
-def transform_data(
-    data: pd.DataFrame,
-    cols: Union[None, List[str]] = None,
-    transf: str = 'arcsinh',
-) -> pd.DataFrame:
-    """Transforms columns in `cols` according to specified transformation.
-
-    Pre-conditions:
-    1. All columns are cast as a nullable dtype in Pandas.
-    2. All columns contain at most 1 nullable dtype (this condition
-       should follow if 1. holds).
-
-    Transformations available:
-    - "log" -- Log transform
-    - "arcsinh" -- Inverse hyperbolic sine transform
-
-    Post-condition: column dtypes are unchanged.
-
-    Raises:
-        ValueError: if `cols` in `data` contain zero values and
-        `transf` is specified as "log".
-    """
-
-    funcs = {
-        'log': np.log,
-        'arcsinh': np.arcsinh,
-    }
-    if transf == 'log' and (data.loc[:, cols] == 0).any().any():
-        raise ValueError('Dataset contains zero values. Cannot take logs.')
-
-    if cols:
-        cols = [clean_text(col) for col in cols]
-        data.loc[:, cols] = (data.loc[:, cols]
-                                 .apply(lambda x: funcs[transf](x)))
     return data
 
 
@@ -544,6 +341,236 @@ def encode_data(data: pd.DataFrame) -> pd.DataFrame:
 
 
 @task
+def wrangle_na(data: pd.DataFrame,
+               strategy: str,
+               cols: Union[None, List[str]] = None,
+               **kwargs) -> pd.DataFrame:
+    """Wrangles missing values in `data` according to the
+    strategy specified in `strategy`.
+
+    Pre-conditions:
+    1. All columns are cast as a nullable dtype in Pandas.
+    2. All columns contain at most 1 nullable dtype (this condition
+       should follow if 1. holds).
+    3. All column names are in a consistent format(see `clean_text`
+       in `utils.py`).
+
+    Available methods:
+
+    1. "cc" -- Complete case: 
+        Drops all missing values.
+
+    2. "fi" -- Fill-in: 
+        Imputes missing values.
+
+    3. "fii" --Fill-in with indicators: 
+        Imputes missing values; creates indicator columns for patterns of
+        missing values across feature columns.
+
+    4. "gm" -- Fill-in with indicators and interactions (AKA grand model): 
+        Imputes missing values; creates indicator columns akin to strategy 3;
+        creates additional missing value indictor columns for the complete set
+        of interactions between features and the missing value indicators.
+        Missing value indicators have the same dtype as their corresponding
+        feature columns.
+
+    5. "mice" -- Multiple imputation with chained equations: 
+        Performs MICE procedure. Returns each imputed dataset from N draws of
+        the original dataset. Optional arguments to specify in `kwargs`:
+
+        - `n_burnin`: 
+            First `n_burnin` MICE iterations to skip; defaults to 20.
+        - `n_imputations`: 
+            Number of MICE iterations to save after burn-in phase;
+            defaults to 10.
+        - `n_spread`: 
+            Number of MICE iterations to skip between saved imputations;
+            defaults to 20.
+
+    Post-conditions:
+    1. Transformed columns originally cast as a nullable integer dtype
+       are coerced into Float64.
+    2. Indicator columns are cast as `BooleanDtype`.
+
+    Note 1. `**kwargs` contains required or optional keyword arguments for
+    `sklearn.preprocessing.SimpleImputer` and
+    `statsmodels.imputation.mice.MICEData`.
+
+    Note 2. By default for "fi", "fii", and "gm", missing values in
+    float columns are replaced by the mean along the column. Missing values
+    in integer columns are replaced by the median along the column.
+    Missing values in categorical and boolean columns are replaced by the most
+    frequent value along the column.
+    """
+
+    # If no missing values
+    if pd.notna(data).all().all():
+        # Return inputted dataframe
+        return data
+
+    # Clean col names
+    if cols:
+        cols = [clean_text(col) for col in cols]
+
+    # If no missing values
+    if pd.notna(data).all().all():
+        return data
+
+    # If complete case
+    if strategy == 'cc':
+        data = data.dropna(**kwargs)
+
+    # If fill-in with indicators or grand model
+    if strategy in ['fii', 'gm']:
+        # Create indicator columns for patterns of na
+        na_indicators = (data.applymap(lambda x: '1' if pd.isna(x) else '0')
+                             .agg(''.join, axis=1)
+                             .pipe(pd.get_dummies)
+                             .add_prefix('na_'))
+        data = data.join(na_indicators)
+
+    # If fill-in (or related)
+    if strategy in ['fi',  'fii', 'gm']:
+        # SimpleImputer (numeric columns)
+        # If kwargs not specified
+        if not(kwargs):
+            # SimpleImputer (floats)
+            float_kwargs = {'strategy': 'mean'}
+            float_cols = data.select_dtypes(include=['float']).columns
+            if any(float_cols):
+                data.loc[:, float_cols] = (
+                    data.loc[:, float_cols].pipe(SimpleImputer(**float_kwargs)
+                                                 .fit_transform))
+            # SimpleImputer (integer)
+            int_kwargs = {'strategy': 'median'}
+            int_cols = data.select_dtypes(include=['integer']).columns
+            if any(int_cols):
+                data.loc[:, int_cols] = (
+                    data.loc[:, int_cols].pipe(SimpleImputer(**int_kwargs)
+                                               .fit_transform)
+                )
+            # SimpleImputer (categorical and boolean columns)
+            fact_kwargs = {'strategy': 'most_frequent'}
+            fact_cols = (data.select_dtypes(include=['category', 'boolean'])
+                             .columns)
+            if any(fact_cols):
+                data.loc[:, fact_cols] = (
+                    data.loc[:, fact_cols].pipe(SimpleImputer(**fact_kwargs)
+                                                .fit_transform))
+
+        # If kwargs and cols specified
+        elif kwargs and cols:
+            data.loc[:, cols] = (data.loc[:, cols]
+                                     .pipe(SimpleImputer(**kwargs)
+                                           .fit_transform))
+        # If kwargs specified
+        else:
+            data = data.pipe(SimpleImputer(**kwargs).fit_transform)
+
+    # If grand model
+    if strategy == 'gm':
+        # Get interactions between features and na_indicators
+        na_cols = [col for col in data.columns if col.startswith('na_')]
+        feature_cols = [col for col in data.columns if col not in na_cols]
+        # Convert to non-nullable dtypes
+        temp_data = pd.DataFrame(data[feature_cols + na_cols]
+                                 .to_numpy()).infer_objects()
+        temp_data.columns = feature_cols + na_cols
+        # Get interactions
+        interaction_terms = list(itertools.product(feature_cols, na_cols))
+        interaction_formula = ' + '.join(
+            ['Q("{}"):Q("{}")'.format(*term) for term
+             in interaction_terms]
+        ) + '-1'
+        interactions = dmatrix(interaction_formula,
+                               temp_data,
+                               return_type='dataframe')
+        data = data.join(interactions)
+
+    # If MICE
+    if strategy == 'mice':
+        # Label encode columns
+        column_codes = pd.Categorical(data.columns)
+        # Dictionary codes label
+        col_code_map = dict(enumerate(column_codes.categories))
+        # Rename columns to standardized terms for patsy
+        data.columns = [f'col{c}' for c in column_codes.codes]
+        imputer = MICEData(data, **kwargs)
+        n_burnin = kwargs.get('n_burnin', 20)
+        n_imputations = kwargs.get('n_imputations', 10)
+        n_spread = kwargs.get('n_spread', 20)
+        imputed_datasets = []
+        # Draw n_burnin + n_imputations + n_imputations * n_spread
+        # MICE iterations
+        for i in range(n_imputations + 1):
+            if i == 0:
+                # Burn-in phase
+                imputer.update_all(n_iter=n_burnin)
+            else:
+                # Imputation phase
+                # Select final update after n_spread iterations
+                imputer.update_all(n_iter=n_spread)
+                imputed_datasets.append(imputer.data)
+        data = pd.concat(imputed_datasets,
+                         keys=list(range(n_imputations)))
+        data.index = data.index.set_names(['iter', 'index'])
+        # Inverse label encode columns
+        data.columns = [col_code_map[int(c[3:])] for c
+                        in data.columns]
+    return data
+
+
+@task
+def transform_data(
+    data: pd.DataFrame,
+    cols: Union[None, List[str]] = None,
+    func: str = 'arcsinh',
+) -> pd.DataFrame:
+    """Transforms columns in `cols` according to
+    specified transformation in `func`.
+
+    Pre-conditions:
+    1. All columns are cast as a nullable dtype in Pandas.
+    2. All columns contain at most 1 nullable dtype (this condition
+       should follow if 1. holds).
+    3. All column names are in a consistent format(see `clean_text`
+       in `utils.py`)
+    4. All columns in `cols` are cast as a numeric dtype.
+
+    Transformations available:
+    - "log" -- Log transform
+    - "arcsinh" -- Inverse hyperbolic sine transform
+
+    Post-conditions:
+    1. Transformed columns originally cast as a nullable integer dtype
+       are coerced into Float64.
+
+    Raises:
+        ValueError: if `cols` in `data` contain zero values and
+        `func` is specified as "log".
+    """
+
+    functions = {
+        'log': np.log,
+        'arcsinh': np.arcsinh,
+    }
+    if cols:
+        if func == 'log' and (data.loc[:, cols] == 0).any().any():
+            raise ValueError('Dataset contains zero values. Cannot take logs.')
+        cols = [clean_text(col) for col in cols]
+        # Get dict of dtypes in original cols
+        dtypes = (data.loc[:, cols]
+                      .dtypes.apply(lambda x: x.name).to_dict())
+        # Replace Int64 with Float64 in dtypes dict
+        coerced_dtypes = {k: (lambda v: 'Float64' if 'Int' in v else v)(v)
+                          for k, v in dtypes.items()}
+        # Apply transformation and coerce previously Int64 cols to Float64
+        data.loc[:, cols] = (functions[func](data.loc[:, cols])
+                             .astype(coerced_dtypes))
+    return data
+
+
+@task
 def gelman_standardize_data(data: pd.DataFrame):
     """Standardizes data by dividing by 2 standard deviations and
     mean-centering them. Non-numeric columns (except boolean columns)
@@ -554,15 +581,28 @@ def gelman_standardize_data(data: pd.DataFrame):
     1. All columns are cast as a nullable dtype in Pandas.
     2. All columns contain at most 1 nullable dtype (this condition
        should follow if 1. holds).
+    3. All column names are in a consistent format(see `clean_text`
+       in `utils.py`).
 
-    Note: integer columns are cast to float.
+    Post-conditions:
+    1. Transformed columns originally cast as a nullable integer or nullable
+       boolean dtypes are coerced into Float64.
     """
-    mask = (data.select_dtypes(include=['boolean'])
-                .columns)
-    data.loc[:, ~mask] = (
-        data.loc[:, ~mask].apply(lambda x: x - x.mean())  # Subtract mean
-                          .apply(lambda x: x / (2*x.std()))  # Divide by 2 sd
-    )
+
+    # Rescale numeric data
+    num_cols = (data.select_dtypes(include=['number'])
+                    .columns)
+    # Subtract mean, then divide by 2 std
+    num_cols_df = data.loc[:, num_cols].copy()  # Defensive copying
+    num_mean = num_cols_df.mean()
+    num_std = num_cols_df.std()
+    data.loc[:, num_cols] = (num_cols_df - num_mean) / (2*num_std)
+    # Rescale boolean data
+    bool_cols = (data.select_dtypes(include=['boolean'])
+                     .columns)
+    bool_cols_df = data.loc[:, bool_cols].copy()  # Defensive copying
+    # Only subtract mean
+    data.loc[:, bool_cols] = bool_cols_df - bool_cols_df.mean()
     return data
 
 
@@ -574,7 +614,15 @@ def run_model(data: pd.DataFrame,
               X: Union[str, List[str]]) -> RegressionResultsWrapper:
     """Runs a linear regression of y on X and
     returns a fitted OLS model in `statsmodels`.
+
+    Pre-conditions:
+    1. All columns are cast as a nullable numeric dtype in Pandas.
+    2. All columns contain at most 1 nullable dtype (this condition
+       should follow if 1. holds).
     """
+
+    # Downcast nullable numeric types to numpy float64
+    data = data.astype(np.float64)
     y, X = clean_text(y), [clean_text(x) for x in X]
     X_with_dummies = [col for col in data.columns if col != y and
                       any(x in col for x in X)]

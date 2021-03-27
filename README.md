@@ -35,13 +35,14 @@ streamlit-e2e-boilerplate has been tested with Python 3.8 and depends on the fol
 - `streamlit`
 - `streamlit-pandas-profiling`
 - `missingno`
+This boilerplate also depends on Prefect Server, which requires `docker` and `docker-compose` to be installed and running.
 
-To use the boilerplate, you must first clone this repo:
+To use the boilerplate, there are three steps. First, you clone this repo:
 ```bash
 git clone git@github.com:topher-lo/streamlit-e2e-boilerplate.git
 cd [..path/to/repo]
 ```
-Then install its dependencies using either pip:
+Second, install its dependencies using either pip:
 ```bash
 python3 -m venv env
 source env/bin/activate
@@ -58,13 +59,30 @@ Then run the following commands on your CLI:
 docker-compose build
 docker-compose up -d
 ```
+Lastly, configure Prefect for local orchestration:
+```bash
+prefect backend server
+```
+Then start the Prefect server:
+```bash
+prefect server start
+```
+And register all flows with the server by running:
+```bash
+python register_flows.py
+```
+Note that Prefect comes with a web-based UI for orchestrating and managing flows.
+Once the server's running, the UI can be viewed by visiting [localhost:8080](http://localhost:8080).
+Moreover, Prefect exposes a GraphQL API for interacting with the platform.
+The API can be accessed through [localhost:4200](http://localhost:4200).
+
 
 ## 🏁 Getting started
 To build your own app, modify pre-existing code and implement empty functions:
-- Data tasks are found in `src/tasks.py`
-- Data workflows are found in `src/pipeline.py`
+- Data tasks are found in `server/tasks.py`
+- Data workflows are found in `server/pipeline.py`
 - The Streamlit app's UI code is found in `app.py`
-- Custom altair themes are found in `src/styles/altair.py`
+- Custom altair themes are found in `server/styles/altair.py`
 
 ## 🚀 A quick example
 In your virtual environment, run the following command from the `streamlit-e2e-boilerplate` dir:
@@ -77,42 +95,42 @@ Otherwise, if you are using docker, the web app will be available at whichever p
 ## 🗃️ Directory structure
 ```
 ├── streamlit-e2e-boilerplate
-    ├── app.py
+    ├── client
+    │   ├── app.py
+    │   ├── __init__.py
+    │   ├── results
+    │   └── tests
+    │       ├── __init__.py
+    │       └── test_app.py
+    ├── conftest.py
     ├── CONTRIBUTING.md
     ├── docker-compose.yml
     ├── Dockerfile
+    ├── .gitignore
     ├── LICENSE
+    ├── pipeline.ini
+    ├── pytest.ini
     ├── README.md
+    ├── register_flows.py
+    ├── requirements-dev.txt
     ├── requirements.txt
-    └── src
+    └── server
+        ├── client
+        │   └── results
         ├── __init__.py
         ├── pipeline.py
         ├── styles
         │   ├── altair.py
-        │   ├── __init__.py
+        │   └── __init__.py
         ├── tasks.py
+        ├── tests
+        │   ├── __init__.py
+        │   └── test_tasks.py
         └── utils.py
 ```
-
-## Deployment
-To deploy to Heroku via Github actions, first generate a Heroku [API key](https://help.heroku.com/PBGP6IDE/how-should-i-generate-an-api-key-that-allows-me-to-use-the-heroku-platform-api). Save this key as `HEROKU_API_KEY` in your Github repo's [secrets](https://docs.github.com/en/actions/reference/encrypted-secrets). Second, create a Heroku app either via the [CLI](https://devcenter.heroku.com/articles/creating-apps) or the web-based [dashboard](https://devcenter.heroku.com/articles/heroku-dashboard). Save the name of your app as `HEROKU_APP_NAME` in your Github repo's secrets.
-
-Create a new branch from the main branch called `prod`:
-```bash
-git checkout main
-git branch prod
-git push origin prod
-```
-This branch is used for production. Any code that is pushed to this branch will be automatically deployed to Heroku. Note: I am looking to include multiple deployment strategies (e.g. AWS Elastic Beanstalk, Azure Container Registry) in future versions of the boilerplate.
-
-## Roadmap
-- Separate out the backend (data tasks and workflow) into [FastAPI](https://github.com/tiangolo/fastapi) for other applications to call
-- Implement automated deployment to AWS Elastic Beanstalk, Digital Ocean, and Azure Container Registry via Github Actions
 
 ## Contributing
 Found a bug? Wrote a patch? Want to add a new feature, suggest changes to the API, or improve the docs? Please checkout the brief [contribution guide](https://github.com/topher-lo/streamlit-e2e-boilerplate/blob/main/CONTRIBUTING.md). Any and all contributions are welcome. ❤️📊🙌
 
 ## Getting in touch
 If you are having a problem with streamlit-e2e-boilerplate, please raise a GitHub issue. For anything else, you can reach me at: lochristopherhy@gmail.com
-
-
