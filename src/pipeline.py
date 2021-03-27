@@ -14,8 +14,14 @@ from .tasks import gelman_standardize_data
 from .tasks import run_model
 from .tasks import plot_confidence_intervals
 
+from prefect.engine.results.local_result import LocalResult
 
-with Flow('wrangle_na_pipeline') as wrangle_na_pipeline:
+
+RESULTS_DIR = './results'
+
+
+with Flow('wrangle_na_pipeline',
+          result=LocalResult(dir=RESULTS_DIR)) as wrangle_na_pipeline:
     url = Parameter('url', required=True)
     sep = Parameter('sep', default=',')
     strategy = Parameter('strategy', default='cc')
@@ -23,7 +29,8 @@ with Flow('wrangle_na_pipeline') as wrangle_na_pipeline:
     wrangled_data = wrangle_na(data, strategy)
 
 
-with Flow('e2e_pipeline') as e2e_pipeline:
+with Flow('e2e_pipeline',
+          result=LocalResult(dir=RESULTS_DIR)) as e2e_pipeline:
 
     # Pipeline parameters
     url = Parameter('url', required=True)
