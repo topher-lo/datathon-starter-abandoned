@@ -13,11 +13,15 @@ from .tasks import wrangle_na
 from .tasks import gelman_standardize_data
 from .tasks import run_model
 from .tasks import plot_confidence_intervals
+from configparser import ConfigParser
 
 from prefect.engine.results.local_result import LocalResult
 
 
-RESULTS_DIR = './results'
+# Get configs
+config = ConfigParser()
+
+RESULTS_DIR = config.read('pipeline.ini').get('prefect', 'RESULTS_DIR')
 
 
 with Flow('wrangle_na_pipeline',
