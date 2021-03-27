@@ -9,7 +9,6 @@ I made this project with two aims. First, as starter code for my own data projec
 
 ## ✨ Features
 - Boilerplate code for data tasks across the data pipeline (preprocessing, modelling, post-processing)
-- 5 common data tasks organised into individual functions (`retrieve_data`, `clean_data`, `transform_data`, `run_model`, and `plot_confidence_intervals`)
 - An example data workflow (of the data tasks) orchestrated using Prefect.
 - An example Streamlit application that demonstrates key commands in Streamlit's [API](https://docs.streamlit.io/en/stable/api.html#display-interactive-widgets) to:
     - Display text, data, status messages, and interactive widgets
