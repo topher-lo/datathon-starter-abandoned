@@ -61,10 +61,10 @@ docker-compose up -d
 
 ## 🏁 Getting started
 To build your own app, modify pre-existing code and implement empty functions:
-- Data tasks are found in `src/tasks.py`
-- Data workflows are found in `src/pipeline.py`
+- Data tasks are found in `server/tasks.py`
+- Data workflows are found in `server/pipeline.py`
 - The Streamlit app's UI code is found in `app.py`
-- Custom altair themes are found in `src/styles/altair.py`
+- Custom altair themes are found in `server/styles/altair.py`
 
 ## 🚀 A quick example
 In your virtual environment, run the following command from the `streamlit-e2e-boilerplate` dir:
@@ -84,7 +84,7 @@ Otherwise, if you are using docker, the web app will be available at whichever p
     ├── LICENSE
     ├── README.md
     ├── requirements.txt
-    └── src
+    └── server
         ├── __init__.py
         ├── pipeline.py
         ├── styles

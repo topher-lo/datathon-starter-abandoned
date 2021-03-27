@@ -5,8 +5,8 @@ import shutil
 import pandas as pd
 import numpy as np
 
-from app import create_prefect_flow_run
-from src.utils import make_path
+from client.app import create_prefect_flow_run
+from server.utils import make_path
 
 from pandas.testing import assert_frame_equal
 
@@ -38,7 +38,7 @@ def test_create_prefect_flow_run(tmp_data_directory):
         'x2': [3, np.nan, 1, 2],
         'x3': ['A', 'B', 'C', 'A']
     }).dropna()
-    # Delete tmpdir
+    # Delete tmpdir if smoke test succeeds
     shutil.rmtree(str(tmpdir))
     # Assertions
     assert state.is_successful()

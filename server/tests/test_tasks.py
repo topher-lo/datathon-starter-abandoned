@@ -13,16 +13,16 @@ from numpy.testing import assert_equal
 
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 
-from src.tasks import _column_wrangler
-from src.tasks import _obj_wrangler
-from src.tasks import _factor_wrangler
-from src.tasks import clean_data
-from src.tasks import wrangle_na
-from src.tasks import run_model
-from src.tasks import transform_data
-from src.tasks import encode_data
-from src.tasks import gelman_standardize_data
-from src.tasks import plot_confidence_intervals
+from server.tasks import _column_wrangler
+from server.tasks import _obj_wrangler
+from server.tasks import _factor_wrangler
+from server.tasks import clean_data
+from server.tasks import wrangle_na
+from server.tasks import run_model
+from server.tasks import transform_data
+from server.tasks import encode_data
+from server.tasks import gelman_standardize_data
+from server.tasks import plot_confidence_intervals
 
 
 # TESTCASES

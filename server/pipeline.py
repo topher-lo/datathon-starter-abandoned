@@ -5,6 +5,7 @@ proprocessing, to modelling, and lastly post-processing. Data workflows in
 
 from prefect import Flow
 from prefect import Parameter
+from configparser import ConfigParser
 from .tasks import retrieve_data
 from .tasks import clean_data
 from .tasks import transform_data
@@ -13,15 +14,15 @@ from .tasks import wrangle_na
 from .tasks import gelman_standardize_data
 from .tasks import run_model
 from .tasks import plot_confidence_intervals
-from configparser import ConfigParser
 
 from prefect.engine.results.local_result import LocalResult
 
 
 # Get configs
 config = ConfigParser()
+config.read('pipeline.ini')
 
-RESULTS_DIR = config.read('pipeline.ini').get('prefect', 'RESULTS_DIR')
+RESULTS_DIR = config.get('prefect', 'LOCAL_RESULTS_DIR')
 
 
 with Flow('wrangle_na_pipeline',

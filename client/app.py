@@ -179,8 +179,8 @@ def main():
         🙌 Build your own data app
 
         Modify pre-existing code and implement empty functions:\n
-        1. Data tasks are found in `src/tasks.py`
-        2. Data workflows are found in `src/pipeline.py`
+        1. Data tasks are found in `server/tasks.py`
+        2. Data workflows are found in `server/pipeline.py`
         3. The Streamlit app's UI code is found in `app.py`
         ---
         🚀 Try a quick example
