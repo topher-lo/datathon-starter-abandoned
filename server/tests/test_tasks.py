@@ -306,6 +306,39 @@ def test_clean_data(data_examples):
     assert_index_equal(res_bool_cols, expected_bool_cols)
 
 
+def test_encode_data_unordered():
+    """All unordered `CategoricalDtype` columns are transformed
+    into dummy columns.
+    """
+
+    data = pd.DataFrame({
+        'cat': ['Chris', 'John', 'Martin', 'James'],
+    }).astype({'cat': 'category'})
+    result = encode_data.run(data)
+    expected = pd.DataFrame({
+        'cat_Chris': [1, 0, 0, 0],
+        'cat_James': [0, 0, 0, 1],
+        'cat_John': [0, 1, 0, 0],
+        'cat_Martin': [0, 0, 1, 0],
+    }).astype('boolean')
+    assert_frame_equal(result, expected)
+
+
+def test_encode_data_ordered():
+    """All ordered `CategoricalDtype` columns are transformed
+    into their category integer codes.
+    """
+    data = pd.DataFrame({
+        'cat': ['A', 'C', 'D', 'C'],
+    }).astype({'cat': 'category'})
+    data.loc[:, 'cat'] = data.loc[:, 'cat'].cat.as_ordered()
+    result = encode_data.run(data)
+    expected = pd.DataFrame({
+        'cat': [0, 1, 2, 1],
+    }).astype('int8')
+    assert_frame_equal(result, expected)
+
+
 def test_wrangle_na(data_examples):
     """All rows with missing values dropped from DataFrame.
     """
