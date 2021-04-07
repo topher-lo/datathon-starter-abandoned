@@ -370,8 +370,6 @@ def wrangle_na(data: pd.DataFrame,
         Imputes missing values; creates indicator columns akin to strategy 3;
         creates additional missing value indictor columns for the complete set
         of interactions between features and the missing value indicators.
-        Missing value indicators have the same dtype as their corresponding
-        feature columns.
 
     5. "mice" -- Multiple imputation with chained equations: 
         Performs MICE procedure. Returns each imputed dataset from N draws of

@@ -396,19 +396,7 @@ def test_wrangle_na_gm():
     result = wrangle_na.run(data, strategy='gm')
     dummy_dtypes = {'na_1000': 'boolean',
                     'na_0100': 'boolean',
-                    'na_0011': 'boolean',
-                    'Q("int_x"):Q("na_1000")': 'Int64',
-                    'Q("int_x"):Q("na_0100")': 'Int64',
-                    'Q("int_x"):Q("na_0011")': 'Int64',
-                    'Q("float_x"):Q("na_1000")': 'float',
-                    'Q("float_x"):Q("na_0100")': 'float',
-                    'Q("float_x"):Q("na_0011")': 'float',
-                    'Q("cat_x"):Q("na_1000")': 'category',
-                    'Q("cat_x"):Q("na_0100")': 'category',
-                    'Q("cat_x"):Q("na_0011")': 'category',
-                    'Q("bool_x"):Q("na_1000")': 'boolean',
-                    'Q("bool_x"):Q("na_0100")': 'boolean',
-                    'Q("bool_x"):Q("na_0011")': 'boolean'}
+                    'na_0011': 'boolean'}
     expected = pd.DataFrame({
         'int_x': [1, 2, 2, 4],
         'float_x': [1.5, 2.0, 2.5, 2.0],
@@ -417,19 +405,29 @@ def test_wrangle_na_gm():
         'na_1000': [0, 0, 1, 0],
         'na_0100': [0, 1, 0, 0],
         'na_0011': [0, 0, 0, 1],
-        'Q("int_x"):Q("na_1000")': [1, 2, pd.NA, 4],
-        'Q("int_x"):Q("na_0100")': [1, pd.NA, 2, 4],
-        'Q("int_x"):Q("na_0011")': [1, 2, 2, pd.NA],
-        'Q("float_x"):Q("na_1000")': [1.5, 2.0, np.nan, 2.0],
-        'Q("float_x"):Q("na_0100")': [1.5, np.nan, 2.5, 2.0],
-        'Q("float_x"):Q("na_0011")': [1.5, 2.0, 2.5, np.nan],
-        'Q("cat_x"):Q("na_1000")': ['A', 'A', pd.NA, 'A'],
-        'Q("cat_x"):Q("na_0100")': ['A', pd.NA, 'B', 'A'],
-        'Q("cat_x"):Q("na_0011")': ['A', 'A', 'B', pd.NA],
-        'Q("bool_x"):Q("na_1000")': [False, True, pd.NA, False],
-        'Q("bool_x"):Q("na_0100")': [False, pd.NA, False, False],
-        'Q("bool_x"):Q("na_0011")': [False, True, False, pd.NA],
+        'Q("cat_x")[A]:Q("na_0011")[False]': [1.0, 1.0, 0.0, 0.0],
+        'Q("cat_x")[B]:Q("na_0011")[False]': [0.0, 0.0, 1.0, 0.0],
+        'Q("cat_x")[A]:Q("na_0011")[True]': [0.0, 0.0, 0.0, 1.0],
+        'Q("cat_x")[B]:Q("na_0011")[True]': [0.0, 0.0, 0.0, 0.0],
+        'Q("cat_x")[A]:Q("na_0100")[T.True]': [0.0, 1.0, 0.0, 0.0],
+        'Q("cat_x")[B]:Q("na_0100")[T.True]': [0.0, 0.0, 0.0, 0.0],
+        'Q("cat_x")[A]:Q("na_1000")[T.True]': [0.0, 0.0, 0.0, 0.0],
+        'Q("cat_x")[B]:Q("na_1000")[T.True]': [0.0, 0.0, 1.0, 0.0],
+        'Q("bool_x")[T.True]:Q("na_0011")[False]': [0.0, 1.0, 0.0, 0.0],
+        'Q("bool_x")[T.True]:Q("na_0011")[True]': [0.0, 0.0, 0.0, 0.0],
+        'Q("bool_x")[T.True]:Q("na_0100")[T.True]': [0.0, 1.0, 0.0, 0.0],
+        'Q("bool_x")[T.True]:Q("na_1000")[T.True]': [0.0, 0.0, 0.0, 0.0],
+        'Q("int_x"):Q("na_0011")[False]': [1.0, 2.0, 2.0, 0.0],
+        'Q("int_x"):Q("na_0011")[True]': [0.0, 0.0, 0.0, 4.0],
+        'Q("int_x"):Q("na_0100")[T.True]': [0.0, 2.0, 0.0, 0.0],
+        'Q("int_x"):Q("na_1000")[T.True]': [0.0, 0.0, 2.0, 0.0],
+        'Q("float_x"):Q("na_0011")[False]': [1.5, 2.0, 2.5, 0.0],
+        'Q("float_x"):Q("na_0011")[True]': [0.0, 0.0, 0.0, 2.0],
+        'Q("float_x"):Q("na_0100")[T.True]': [0.0, 2.0, 0.0, 0.0],
+        'Q("float_x"):Q("na_1000")[T.True]': [0.0, 0.0, 2.5, 0.0],
     }).astype(dtypes).astype(dummy_dtypes)
+    result = result.loc[:, sorted(result.columns)]
+    expected = expected.loc[:, sorted(expected.columns)]
     assert_frame_equal(result, expected)
 
 
