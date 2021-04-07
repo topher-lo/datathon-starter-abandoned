@@ -5,7 +5,7 @@
 🛠️📊 Boilerplate code for an end-to-end data app using pandas, Streamlit, and Prefect.
 
 ### Project Status:
-- Docker not working under new client/server architecture (TO FIX)
+- Dockerised app not working under new client/server architecture (TO FIX)
 - Writing unit tests for tasks (IN PROGRESS)
 
 ### Motivation
