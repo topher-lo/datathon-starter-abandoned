@@ -369,10 +369,11 @@ def test_wrangle_na_fii():
         'float_x': [1.5, 2.0, 2.5, 2.0],
         'cat_x': ['A', 'A', 'B', 'A'],
         'bool_x': [False, True, False, False],
-        'na_1000': [0, 0, 1, 0],
-        'na_0100': [0, 1, 0, 0],
         'na_0011': [0, 0, 0, 1],
+        'na_0100': [0, 1, 0, 0],
+        'na_1000': [0, 0, 1, 0],
     }).astype(dtypes).astype(dummy_dtypes)
+    print(result)
     assert_frame_equal(result, expected)
 
 
