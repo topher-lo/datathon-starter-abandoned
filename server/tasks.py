@@ -334,8 +334,8 @@ def encode_data(data: pd.DataFrame) -> pd.DataFrame:
         data = (data.loc[:, ~data.columns.isin(unordered)]
                     .join(dummies))
     if ordered.any():
-        data.loc[:, ordered] = (data.loc[:, ordered]
-                                    .apply(lambda x: x.cat.codes))
+        for col in ordered:
+            data.loc[:, col] = data.loc[:, col].cat.codes
     return data
 
 
