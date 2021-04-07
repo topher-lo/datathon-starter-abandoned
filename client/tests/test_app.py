@@ -3,6 +3,7 @@
 
 import shutil
 import pandas as pd
+import pytest
 import numpy as np
 
 from client.app import create_prefect_flow_run
@@ -10,7 +11,7 @@ from server.utils import make_path
 
 from pandas.testing import assert_frame_equal
 
-
+@pytest.mark.apitest
 def test_create_prefect_flow_run(tmp_data_directory):
     flow_name = 'wrangle_na_pipeline'
     project_name = 'streamlit-e2e-boilerplate'
