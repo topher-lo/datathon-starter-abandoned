@@ -9,7 +9,6 @@
 
 ### Project Status:
 - Dockerised app not working under new client/server architecture (TO FIX)
-- Writing unit tests for tasks (IN PROGRESS)
 
 ### Motivation
 I made this project with two aims. First, as starter code for my own data projects. Second, as a "learning-by-doing" project to gather and apply best-practices in pandas, data workflows, and statistics. As my work is primarily in causal machine learning, the boilerplate is slightly biased towards econometrics and user-driven data workflows. Nevertheless, by releasing this code, I hope it can be useful to others when they begin to build their own data app.
