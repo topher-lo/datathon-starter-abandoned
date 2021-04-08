@@ -12,14 +12,6 @@ on:
       - '.gitattributes'
       - '.gitignore'
 
-  pull_request:
-    branches: [ main ]
-    paths-ignore:
-      - 'README.md'
-      - 'CONTRIBUTING.md'
-      - '.gitattributes'
-      - '.gitignore'
-
 jobs:
   run-tests:
     runs-on: ubuntu-latest
