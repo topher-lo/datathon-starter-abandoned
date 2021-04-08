@@ -83,6 +83,12 @@ from pandas.api.types import is_categorical_dtype
 from pandas.api.types import is_float_dtype
 
 
+# Sanitize user inputted column names
+@task
+def sanitize_col_names(cols: List[str]) -> List[str]:
+    return [clean_text[col] for col in cols]
+
+
 # Pre-processing
 
 @task(max_retries=3, retry_delay=dt.timedelta(seconds=10))
@@ -174,8 +180,7 @@ def _factor_wrangler(
        Otherwise, the columns must either be specified in `is_cat`, is a string
        column and `str_to_cat` is True, or is a boolean column and
        `dummy_to_bool` is True.
-    3. All column names are in a consistent format(see `clean_text`
-       in `utils.py`)
+    3. All column names are in a consistent format (see `_column_wrangler`)
 
     Args:
         data (pd.DataFrame): 
@@ -236,7 +241,6 @@ def _factor_wrangler(
                                  .astype('boolean'))
 
     if cat_cols:
-        cat_cols = [clean_text(col) for col in cat_cols]  # Clean col names
         all_cat_cols += cat_cols
     if all_cat_cols:
         for col in all_cat_cols:
@@ -245,7 +249,7 @@ def _factor_wrangler(
     # Set categories
     if categories:
         # Clean col names
-        categories = {clean_text(k): v for k, v in categories.items()}
+        categories = {k: v for k, v in categories.items()}
         for col, cats in categories.items():
             data.loc[:, col] = (data.loc[:, col]
                                     .cat
@@ -253,7 +257,7 @@ def _factor_wrangler(
     # Set is_ordered
     if ordered_cols:
         # Clean col names
-        ordered_cols = [clean_text(col) for col in ordered_cols]
+        ordered_cols = [col for col in ordered_cols]
         for col in ordered_cols:
             data.loc[:, col] = (data.loc[:, col]
                                     .cat
@@ -351,8 +355,7 @@ def wrangle_na(data: pd.DataFrame,
     1. All columns are cast as a nullable dtype in Pandas.
     2. All columns contain at most 1 nullable dtype (this condition
        should follow if 1. holds).
-    3. All column names are in a consistent format(see `clean_text`
-       in `utils.py`).
+    3. All column names are in a consistent format(see `_column_wrangler`).
 
     Available methods:
 
@@ -403,10 +406,6 @@ def wrangle_na(data: pd.DataFrame,
     if pd.notna(data).all().all():
         # Return inputted dataframe
         return data
-
-    # Clean col names
-    if cols:
-        cols = [clean_text(col) for col in cols]
 
     # If no missing values
     if pd.notna(data).all().all():
@@ -520,8 +519,7 @@ def transform_data(
     1. All columns are cast as a nullable dtype in Pandas.
     2. All columns contain at most 1 nullable dtype (this condition
        should follow if 1. holds).
-    3. All column names are in a consistent format(see `clean_text`
-       in `utils.py`)
+    3. All column names are in a consistent format (see `_column_wrangler`).
     4. All columns in `cols` are cast as a numeric dtype.
 
     Transformations available:
@@ -544,7 +542,6 @@ def transform_data(
     if cols:
         if func == 'log' and (data.loc[:, cols] == 0).any().any():
             raise ValueError('Dataset contains zero values. Cannot take logs.')
-        cols = [clean_text(col) for col in cols]
         # Get dict of dtypes in original cols
         dtypes = (data.loc[:, cols]
                       .dtypes.apply(lambda x: x.name).to_dict())
@@ -568,8 +565,7 @@ def gelman_standardize_data(data: pd.DataFrame):
     1. All columns are cast as a nullable dtype in Pandas.
     2. All columns contain at most 1 nullable dtype (this condition
        should follow if 1. holds).
-    3. All column names are in a consistent format(see `clean_text`
-       in `utils.py`).
+    3. All column names are in a consistent format(see `_column_wrangler`).
 
     Post-conditions:
     1. Transformed columns originally cast as a nullable integer or nullable
@@ -610,7 +606,6 @@ def run_model(data: pd.DataFrame,
 
     # Downcast nullable numeric types to numpy float64
     data = data.astype(np.float64)
-    y, X = clean_text(y), [clean_text(x) for x in X]
     X_with_dummies = [col for col in data.columns if col != y and
                       any(x in col for x in X)]
     mod = sm.OLS(data[y], data[X_with_dummies])

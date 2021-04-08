@@ -6,6 +6,7 @@ proprocessing, to modelling, and lastly post-processing. Data workflows in
 from prefect import Flow
 from prefect import Parameter
 from configparser import ConfigParser
+from .tasks import sanitize_col_names
 from .tasks import retrieve_data
 from .tasks import clean_data
 from .tasks import transform_data
@@ -47,6 +48,12 @@ with Flow('e2e_pipeline',
     transf = Parameter('transf', default=None)
     endog = Parameter('endog', required=True)
     exog = Parameter('exog', required=True)
+
+    # Sanitize column names
+    cat_cols = sanitize_col_names(cat_cols)
+    transformed_cols = sanitize_col_names(transformed_cols)
+    endog = sanitize_col_names(endog)
+    exog = sanitize_col_names(exog)
 
     # Preprocessing
     data = retrieve_data(url, sep)
