@@ -2,8 +2,8 @@
 """
 
 from configparser import ConfigParser
-from pipeline import wrangle_na_pipeline
-from pipeline import e2e_pipeline
+from src.pipeline import wrangle_na_pipeline
+from src.pipeline import e2e_pipeline
 
 # Get configs
 config = ConfigParser()
