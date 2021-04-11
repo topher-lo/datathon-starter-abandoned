@@ -4,7 +4,6 @@ via `streamlit run app.py`.
 """
 
 import pandas as pd
-import prefect
 import streamlit as st
 import missingno as msno
 import time

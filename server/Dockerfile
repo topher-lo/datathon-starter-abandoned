@@ -18,4 +18,3 @@ COPY requirements.txt $MICRO_SERVICE/requirements.txt
 RUN pip install -r requirements.txt
 # copy project
 COPY . $MICRO_SERVICE
-CMD ["sh", "-c", "streamlit run --server.port $PORT app.py"] 
