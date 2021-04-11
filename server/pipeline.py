@@ -16,18 +16,29 @@ from .tasks import gelman_standardize_data
 from .tasks import run_model
 from .tasks import plot_confidence_intervals
 
+from prefect.engine.executors import DaskExecutor
+
 from prefect.engine.results.local_result import LocalResult
 
 
 # Get configs
+
 config = ConfigParser()
 config.read('pipeline.ini')
 
 RESULTS_DIR = config.get('prefect', 'LOCAL_RESULTS_DIR')
+DASK_EXECUTER_ADDR = config.get('prefect', 'LOCAL_RESULTS_DIR')
 
+
+# Prefect Flow Executer
+
+executer = DaskExecutor(address=DASK_EXECUTER_ADDR)
+
+# Flows
 
 with Flow('wrangle_na_pipeline',
-          result=LocalResult(dir=RESULTS_DIR)) as wrangle_na_pipeline:
+          result=LocalResult(dir=RESULTS_DIR),
+          executor=executer) as wrangle_na_pipeline:
     url = Parameter('url', required=True)
     sep = Parameter('sep', default=',')
     strategy = Parameter('strategy', default='cc')
@@ -36,7 +47,8 @@ with Flow('wrangle_na_pipeline',
 
 
 with Flow('e2e_pipeline',
-          result=LocalResult(dir=RESULTS_DIR)) as e2e_pipeline:
+          result=LocalResult(dir=RESULTS_DIR),
+          executor=executer) as e2e_pipeline:
 
     # Pipeline parameters
     url = Parameter('url', required=True)
