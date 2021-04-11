@@ -22,8 +22,9 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+        if [ -f server/requirements.txt ]; then pip install -r server/requirements.txt; fi
+        if [ -f client/requirements.txt ]; then pip install -r client/requirements.txt; fi
     - name: Generate coverage report
       run: |
         pytest -m "not apitest" --cov-report=xml
