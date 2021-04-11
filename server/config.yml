@@ -9,6 +9,6 @@ worker:
       memory: 3.5G
   env:
     - name: EXTRA_PIP_PACKAGES
-      value: prefect
+      value: prefect altair scikit-learn statsmodels --upgrade
 jupyter:
   enabled: false

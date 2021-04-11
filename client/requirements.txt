@@ -1,5 +1,0 @@
-streamlit
-streamlit-pandas-profiling
-pandas
-prefect
-missingno
