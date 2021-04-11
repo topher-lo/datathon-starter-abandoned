@@ -27,12 +27,12 @@ config = ConfigParser()
 config.read('pipeline.ini')
 
 RESULTS_DIR = config.get('prefect', 'LOCAL_RESULTS_DIR')
-DASK_EXECUTER_ADDR = config.get('prefect', 'LOCAL_RESULTS_DIR')
+DASK_SCHEDULER_ADDR = config.get('prefect', 'LOCAL_RESULTS_DIR')
 
 
 # Prefect Flow Executer
 
-executer = DaskExecutor(address=DASK_EXECUTER_ADDR)
+executer = DaskExecutor(address=DASK_SCHEDULER_ADDR)
 
 # Flows
 
