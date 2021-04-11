@@ -1,4 +1,4 @@
-"""Run this script to register flows to be managed by the Prefect Backend.
+"""Registers flows to be managed by the Prefect Backend.
 """
 
 from configparser import ConfigParser

@@ -7,7 +7,7 @@ import pytest
 import numpy as np
 
 from client.app import create_prefect_flow_run
-from server.utils import make_path
+from server.src.utils import make_path
 
 from pandas.testing import assert_frame_equal
 
