@@ -1,46 +1,31 @@
 """Unit tests for running and querying Prefect flow runs from the Streamlit app.
 """
 
-import shutil
-import pandas as pd
 import pytest
-import numpy as np
 
 from client.app import create_prefect_flow_run
-from server.src.utils import make_path
 
-from pandas.testing import assert_frame_equal
 
 @pytest.mark.apitest
-def test_create_prefect_flow_run(tmp_data_directory):
-    flow_name = 'wrangle_na_pipeline'
+def test_create_prefect_flow_run():
+    flow_name = 'mapreduce_wordcount'
     project_name = 'streamlit-e2e-boilerplate'
-    task_refs = ['wrangle_na']
-    # Create fake CSV in tmp ir
-    tmpdir = tmp_data_directory
-    make_path(tmpdir)
-    data = pd.DataFrame({
-        'x1': [1, 0, 1, 1],
-        'x2': [3, np.nan, 1, 2],
-        'x3': ['A', 'B', 'C', 'A']
-    })
-    file_path = f'{tmpdir}/test.csv'
-    data.to_csv(file_path)
-    # Test function
-    params = {'url': file_path,
-              'sep': ',',
-              'strategy': 'cc'}
-    result, state = create_prefect_flow_run(flow_name,
-                                            project_name,
-                                            task_refs,
-                                            params)
-    expected = pd.DataFrame({
-        'x1': [1, 0, 1, 1],
-        'x2': [3, np.nan, 1, 2],
-        'x3': ['A', 'B', 'C', 'A']
-    }).dropna()  # Complete case strategy
-    # Delete tmpdir if smoke test succeeds
-    shutil.rmtree(str(tmpdir))
-    # Assertions
-    assert state.is_successful()
-    assert_frame_equal(result['wrangle_na'], expected)
+    task_refs = ['merged_token_counts']
+
+    url = ('https://raw.githubusercontent.com/KTH/ci-hackathon/master/'
+           'installations/ci-poetry/supercollider_src/poet10/poem.txt')
+    params = {'url': url}
+    result, state = create_prefect_flow_run(
+        flow_name,
+        project_name,
+        task_refs,
+        params
+    )
+    # Get top 3 tokens
+    result_top_tokens = sorted(result, key=lambda x: x[1])[:3]
+    expected_top_tokens = [('a', 4), ('and', 4), ('an', 1)]
+    assert result_top_tokens == expected_top_tokens
+
+
+if __name__ == "__main__":
+    pass
