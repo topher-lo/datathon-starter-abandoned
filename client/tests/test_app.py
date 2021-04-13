@@ -8,7 +8,7 @@ from client.app import create_prefect_flow_run
 
 @pytest.mark.apitest
 def test_create_prefect_flow_run():
-    flow_name = 'mapreduce_wordcount'
+    flow_name = 'mock_flow'
     project_name = 'streamlit-e2e-boilerplate'
     task_refs = ['merged_token_counts']
 

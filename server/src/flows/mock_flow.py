@@ -15,6 +15,8 @@ from prefect import Parameter
 from prefect import task
 from prefect import Flow
 from prefect import flatten
+from prefect.storage import GitHub
+
 
 
 @task
@@ -56,9 +58,9 @@ def reducer(partition):
     return (key, sum(value))
 
 
-with Flow(name='mapreduce_wordcount') as mock_flow:
+with Flow(name='mock_flow') as mock_flow:
 
-    url = Parameter('message', required=True)
+    url = Parameter('url', required=True)
 
     message = download_message(url)
     lines = split_message(message)

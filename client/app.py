@@ -67,6 +67,7 @@ def create_prefect_flow_run(flow_name: str,
                         task_id = task_run.id
                         state = client.get_task_run_state(task_id)
                         task_res_locs[ref] = state._result.location
+                        print(state._result.location)
                 task_results = {}
                 for ref, loc in task_res_locs.items():
                     local_res = LocalResult()
@@ -236,7 +237,7 @@ def main():
         task_refs = ['wrangle_na']
         params = {'url': params.get('url'),
                   'sep': params.get('sep'),
-                  'strategy': na_strategy}
+                  'strategy': params.get('na_strategy')}
         results, state_msg = create_prefect_flow_run(flow_name,
                                                      project_name,
                                                      task_refs,
