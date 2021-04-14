@@ -1,7 +1,7 @@
 """This module implements a MapReduce wordcount program as a Flow
 to test a distributed Prefect pipeline. This classic MapReduce program
 was also chosen to demonstrate Prefect's Dask executor, which
-`streamlit-e2e-boilerplate` deploys onto a Kubernetes cluster.
+`datathon-mlapp-starter` deploys onto a Kubernetes cluster.
 
 Note: this module is not meant to be an efficient solution to the word
 counting problem. It is only meant to demonstrate distributed workflows

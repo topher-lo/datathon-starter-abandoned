@@ -1,4 +1,4 @@
-"""Utility functions used in `streamlit-e2e-boilerplate`.
+"""Utility functions used in `datathon-mlapp-starter`.
 """
 
 import os
