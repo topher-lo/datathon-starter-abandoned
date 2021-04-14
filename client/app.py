@@ -1,5 +1,5 @@
 """Runs the streamlit app.
-Call this file in the terminal (from the `streamlit-e2e-boilerplate` dir)
+Call this file in the terminal (from the `datathon-mlapp-starter` dir)
 via `streamlit run app.py`.
 """
 
@@ -164,13 +164,13 @@ def main():
     """
 
     # Configures the default settings
-    st.set_page_config(page_title='streamlit-e2e-boilerplate',
+    st.set_page_config(page_title='datathon-mlapp-starter',
                        page_icon='🛠️',
                        layout='wide')
 
     # Page title and header
     st.title('🛠️📊')
-    st.title('Boilerplate for data applications')
+    st.title('Starter code for data applications')
     st.subheader('MIT License')
     st.markdown(
         """
@@ -232,7 +232,7 @@ def main():
             st.warning('Please select an endogenous variable')
             st.stop()
         flow_name = 'e2e_pipeline'
-        project_name = 'streamlit-e2e-boilerplate'
+        project_name = 'datathon-mlapp-starter'
         task_refs = ['wrangle_na']
         params = {'url': params.get('url'),
                   'sep': params.get('sep'),

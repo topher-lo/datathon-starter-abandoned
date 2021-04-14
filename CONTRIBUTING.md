@@ -1,4 +1,4 @@
-## How to contribute to streamlit-e2e-boilerplate
+## How to contribute to datathon-mlapp-starter
 ### Note:
 Before you start coding your contribution, it may be wise to raise an issue on GitHub to discuss whether the contribution is appropriate for the project. I care a lot about having a clean API, so I am unlikely to accept a PR that significantly complicates the API (or the dependencies).
 

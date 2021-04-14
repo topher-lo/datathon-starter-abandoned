@@ -9,7 +9,7 @@ from client.app import create_prefect_flow_run
 @pytest.mark.apitest
 def test_create_prefect_flow_run():
     flow_name = 'mock_flow'
-    project_name = 'streamlit-e2e-boilerplate'
+    project_name = 'datathon-mlapp-starter'
     task_refs = ['merged_token_counts']
 
     url = ('https://raw.githubusercontent.com/KTH/ci-hackathon/master/'

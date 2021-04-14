@@ -51,7 +51,7 @@ Given a fitted OLS model in `statsmodels`, returns a box and whisker regression 
 Note 1. Public functions (i.e. functions without a leading underscore `_func`) are wrapped around Prefect's `@task` decorator
 
 Note 2. Empty functions (e.g. `_check_model_assumptions`) are
-suggested data tasks for the boilerplate's user to implement.
+suggested data tasks for the user to implement.
 For instance, the model assumptions of multiple linear regression
 (i.e. no multicollinearity) might not appAly for another model
 (e.g. non-parametric models such as random forest).
