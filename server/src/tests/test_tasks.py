@@ -6,23 +6,21 @@ import pytest
 from io import StringIO
 
 from pandas.testing import assert_frame_equal
-from pandas.testing import assert_series_equal
 from pandas.testing import assert_index_equal
-from numpy.testing import assert_allclose
 from numpy.testing import assert_equal
 
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 
-from server.tasks import _column_wrangler
-from server.tasks import _obj_wrangler
-from server.tasks import _factor_wrangler
-from server.tasks import clean_data
-from server.tasks import wrangle_na
-from server.tasks import run_model
-from server.tasks import transform_data
-from server.tasks import encode_data
-from server.tasks import gelman_standardize_data
-from server.tasks import plot_confidence_intervals
+from server.src.tasks.data import _column_wrangler
+from server.src.tasks.data import _obj_wrangler
+from server.src.tasks.data import _factor_wrangler
+from server.src.tasks.data import clean_data
+from server.src.tasks.data import wrangle_na
+from server.src.tasks.data import run_model
+from server.src.tasks.data import transform_data
+from server.src.tasks.data import encode_data
+from server.src.tasks.data import gelman_standardize_data
+from server.src.tasks.data import plot_confidence_intervals
 
 
 # TESTCASES

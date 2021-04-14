@@ -4,7 +4,6 @@ via `streamlit run app.py`.
 """
 
 import pandas as pd
-import prefect
 import streamlit as st
 import missingno as msno
 import time
@@ -73,7 +72,7 @@ def create_prefect_flow_run(flow_name: str,
                     local_res = LocalResult()
                     result = local_res.read(loc)
                     task_results[ref] = result.value
-                return task_results, flow_state
+                return task_results, flow_state, task_res_locs
     except ValueError as err:
         raise err
 
@@ -208,7 +207,7 @@ def main():
     st.table(data.sample(5))  # Display random sample as a static table
 
     # Column container for buttons
-    col1, col2, col3, col4 = st.beta_columns(4)
+    col1, col2, col3 = st.beta_columns(3)
     # Data profiling
     if col1.button('🔬 Data profiling report'):
         profile_report = ProfileReport(data, explorative=True)
@@ -225,28 +224,8 @@ def main():
             st.pyplot(fig2)
             fig3 = msno.dendrogram(data).get_figure()
             st.pyplot(fig3)
-    # Missing value wrangler
-    if col3.button('🕵️ Wrangle NA values'):
-        # Check if there are any missing values
-        if pd.notna(data).all().all():
-            st.warning('No missing values in dataset')
-        else:
-            na_strategy = params.get('na_strategy')
-            flow_name = 'wrangle_na_pipeline'
-            project_name = 'streamlit-e2e-boilerplate'
-            task_refs = ['wrangle_na']
-            params = {'url': params.get('url'),
-                      'sep': params.get('sep'),
-                      'strategy': na_strategy}
-            results, _ = create_prefect_flow_run(flow_name,
-                                                 project_name,
-                                                 task_refs,
-                                                 params)
-            st.write('')  # Insert blank line
-            st.subheader('Wrangled Dataset')
-            st.dataframe(results['wrangle_na'])
     # Run data workflow
-    if col4.button('✨ Run workflow!'):
+    if col3.button('✨ Run workflow!'):
         st.write('---')
         # Stop execution until a valid endogenous variable is selected
         if not(params.get('endog')):
@@ -257,7 +236,7 @@ def main():
         task_refs = ['wrangle_na']
         params = {'url': params.get('url'),
                   'sep': params.get('sep'),
-                  'strategy': na_strategy}
+                  'strategy': params.get('na_strategy')}
         results, state_msg = create_prefect_flow_run(flow_name,
                                                      project_name,
                                                      task_refs,
