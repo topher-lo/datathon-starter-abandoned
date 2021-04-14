@@ -29,75 +29,20 @@ I made this project with two aims. First, as starter code for my own data projec
 - Fully documented functions, modules, and code (using inline comments)
 
 ## Install
-streamlit-e2e-boilerplate has been tested with Python 3.8 and depends on the following packages:
-- `altair`
-- `pandas`
-- `prefect`
-- `statsmodels`
-- `sklearn`
-- `streamlit`
-- `streamlit-pandas-profiling`
-- `missingno`
-This boilerplate also depends on Prefect Server, which requires `docker` and `docker-compose` to be installed and running.
+streamlit-e2e-boilerplate has been tested with Python 3.8. Dependencies for the Streamlit app and Prefect server can be found in `client/requirements.txt` and `server/requirements.txt` respectively.
 
-To use the boilerplate, there are three steps. First, you clone this repo:
-```bash
-git clone git@github.com:topher-lo/streamlit-e2e-boilerplate.git
-cd [..path/to/repo]
-```
-Second, install its dependencies using either pip:
-```bash
-python3 -m venv env
-source env/bin/activate
-pip3 install -r requirements.txt
-```
-Or run it as a containerised application using docker and docker-compose.
-First create a file `.env` with the line:
-```
-PORT=8501
-```
-to specify which port to publish the data app to.
-Then run the following commands on your CLI:
-```bash
-docker-compose build
-docker-compose up -d
-```
-Lastly, set-up Prefect Server and deploy flows.
-1. Configure Prefect for local orchestration:
-```bash
-prefect backend server
-```
-2. Start the Prefect Server:
-```bash
-prefect server start
-```
-3. Register all flows with the server by running:
-```bash
-python register_flows.py
-```
-4. Start a Prefect Agent to execute and monitor Flow runs:
-```bash
-prefect agent start
-```
-Note: Prefect comes with a web-based UI for orchestrating and managing flows.
-Once the server's running, this UI can be viewed by visiting [localhost:8080](http://localhost:8080).
-Moreover, Prefect exposes a GraphQL API for interacting with the platform.
-This API can be accessed through [localhost:4200](http://localhost:4200).
+This boilerplate also requires Docker and a Kubernetes cluster to be installed and running.
 
 
 ## 🏁 Getting started
 To build your own app, modify pre-existing code and implement empty functions:
-- Data tasks are found in `server/tasks.py`
-- Data workflows are found in `server/pipeline.py`
+- Data tasks are found in `server/src/tasks.py`
+- Data workflows are found in `server/src/pipeline.py`
 - The Streamlit app's UI code is found in `client/app.py`
-- Custom altair themes are found in `server/styles/altair.py`
+- Custom altair themes are found in `server/src/styles/altair.py`
 
-## 🚀 A quick example
-In your virtual environment, run the following command from the `streamlit-e2e-boilerplate/client` dir:
-```bash
-streamlit run app.py
-```
-The web app will be available at http://localhost:8501/
+## 🚀 Deployment to Digital Ocean
+TODO
 
 ## Contributing
 Found a bug? Wrote a patch? Want to add a new feature, suggest changes to the API, or improve the docs? Please checkout the brief [contribution guide](https://github.com/topher-lo/streamlit-e2e-boilerplate/blob/main/CONTRIBUTING.md). Any and all contributions are welcome. ❤️📊🙌

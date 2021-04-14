@@ -1,0 +1,14 @@
+worker:
+  replicas: 4
+  resources:
+    limits:
+      cpu: 1
+      memory: 3.5G
+    requests:
+      cpu: 1
+      memory: 3.5G
+  env:
+    - name: EXTRA_PIP_PACKAGES
+      value: prefect altair bokeh scikit-learn statsmodels --upgrade
+jupyter:
+  enabled: false
