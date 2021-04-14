@@ -29,12 +29,16 @@ jobs:
         if [ -f requirements/requirements-dev.txt ]; then pip install -r  requirements/requirements-dev.txt; fi
         if [ -f requirements/requirements-client.txt ]; then pip install -r  requirements/requirements-client.txt; fi
         if [ -f requirements/requirements-server.txt ]; then pip install -r  requirements/requirements-server.txt; fi
+  lint:
     - name: Lint with flake8
+      needs: build
       run: |
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+  test:
     - name: Test with pytest
+      needs: build
       run: |
         pytest -m "not (apitest or dasktest)"
