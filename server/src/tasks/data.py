@@ -86,7 +86,8 @@ from pandas.api.types import is_float_dtype
 # Sanitize user inputted column names
 @task
 def sanitize_col_names(cols: List[str]) -> List[str]:
-    return [clean_text[col] for col in cols]
+    if cols:
+        return [clean_text(col) for col in cols]
 
 
 # Pre-processing
