@@ -11,7 +11,7 @@ on:
       - '.github/ISSUE_TEMPLATE/*'
 
 jobs:
-  run:
+  build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -25,7 +25,9 @@ jobs:
         if [ -f requirements/requirements-dev.txt ]; then pip install -r  requirements/requirements-dev.txt; fi
         if [ -f requirements/requirements-client.txt ]; then pip install -r  requirements/requirements-client.txt; fi
         if [ -f requirements/requirements-server.txt ]; then pip install -r  requirements/requirements-server.txt; fi
+  codecov:
     - name: Generate coverage report
+      needs: build
       run: |
         pytest -m "not (apitest or dasktest)" --cov-report=xml
     - name: Upload coverage to Codecov
