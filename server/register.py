@@ -3,15 +3,15 @@
 
 from configparser import ConfigParser
 
-from src.flows.e2e_pipeline import e2e_pipeline
-from src.flows.mock_flow import mock_flow
-
 from prefect.storage import GitHub
 from prefect.executors import DaskExecutor
 
 from prefect.engine.results.azure_result import AzureResult
 from prefect.engine.results.s3_result import S3Result
 from prefect.engine.results.local_result import LocalResult
+
+from server.src.flows.e2e_pipeline import e2e_pipeline
+from server.src.flows.mock_flow import mock_flow
 
 
 # Get configs
@@ -37,7 +37,7 @@ gh_storage_kwargs = {
 }
 
 # Executer
-executer = DaskExecutor(address=DASK_SCHEDULER_ADDR)
+executor = DaskExecutor(address=DASK_SCHEDULER_ADDR)
 
 # Result
 if RESULT_SUBCLASS == 'azure':
@@ -51,19 +51,18 @@ else:
 # Set Flow Storage
 e2e_pipeline.storage = GitHub(
     path=f'{GITHUB_FLOWS_PATH}/e2e_pipeline.py',
-    ref='feat/dask-kubernetes-executer',
     **gh_storage_kwargs
 )
 mock_flow.storage = GitHub(
-    path='{GITHUB_FLOWS_PATH}/mock_flow.py',
-    ref='feat/dask-kubernetes-executer',
+    path=f'{GITHUB_FLOWS_PATH}/mock_flow.py',
     repo='topher-lo/streamlit-e2e-boilerplate',
 )
 
 
 # Set Flow Executer
-e2e_pipeline.executer = executer
-mock_flow.executer = executer
+e2e_pipeline.executor = executor
+mock_flow.executor = executor
+
 
 # Set Flow Result
 e2e_pipeline.result = result

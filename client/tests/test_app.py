@@ -15,7 +15,7 @@ def test_create_prefect_flow_run():
     url = ('https://raw.githubusercontent.com/KTH/ci-hackathon/master/'
            'installations/ci-poetry/supercollider_src/poet10/poem.txt')
     params = {'url': url}
-    result, state = create_prefect_flow_run(
+    result, state, task_res_locs = create_prefect_flow_run(
         flow_name,
         project_name,
         task_refs,

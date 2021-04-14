@@ -15,8 +15,6 @@ from prefect import Parameter
 from prefect import task
 from prefect import Flow
 from prefect import flatten
-from prefect.storage import GitHub
-
 
 
 @task
