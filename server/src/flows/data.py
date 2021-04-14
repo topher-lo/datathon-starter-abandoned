@@ -24,14 +24,14 @@ with Flow(name='e2e_pipeline') as e2e_pipeline:
     cat_cols = Parameter('cat_cols', default=None)
     na_values = Parameter('na_values', default=None)
     na_strategy = Parameter('na_strategy', default='cc')
-    transformed_cols = Parameter('transformed_cols', default=None)
-    transf = Parameter('transf', default=None)
+    transf_cols = Parameter('transf_cols', default=None)
+    transf_func = Parameter('transf_func', default=None)
     endog = Parameter('endog', required=True)
     exog = Parameter('exog', required=True)
 
     # Sanitize column names
     cat_cols = sanitize_col_names(cat_cols)
-    transformed_cols = sanitize_col_names(transformed_cols)
+    transformed_cols = sanitize_col_names(transf_cols)
     endog = sanitize_col_names(endog)
     exog = sanitize_col_names(exog)
 
@@ -40,7 +40,9 @@ with Flow(name='e2e_pipeline') as e2e_pipeline:
     cleaned_data = clean_data(data, na_values, cat_cols)
     encoded_data = encode_data(cleaned_data)
     wrangled_data = wrangle_na(encoded_data, na_strategy)
-    transformed_data = transform_data(wrangled_data, transformed_cols, transf)
+    transformed_data = transform_data(wrangled_data,
+                                      transformed_cols,
+                                      transf_func)
     standardized_data = gelman_standardize_data(transformed_data)
 
     # Modelling
