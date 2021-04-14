@@ -1,0 +1,9 @@
+altair
+bokeh
+dask
+numpy
+pandas
+prefect
+prefect[github]
+scikit-learn
+statsmodels
