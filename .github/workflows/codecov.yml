@@ -27,7 +27,7 @@ jobs:
         if [ -f requirements/requirements-server.txt ]; then pip install -r  requirements/requirements-server.txt; fi
     - name: Generate coverage report
       run: |
-        pytest -m "not apitest" --cov-report=xml
+        pytest -m "not (apitest or dasktest)" --cov-report=xml
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
