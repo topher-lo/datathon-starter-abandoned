@@ -73,9 +73,9 @@ from prefect import task
 from typing import List
 from typing import Union
 from typing import Mapping
-from .utils import clean_text
+from ..utils import clean_text
 
-from .styles.altair import streamlit_theme
+from ..styles.altair import streamlit_theme
 
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 from statsmodels.imputation.mice import MICEData

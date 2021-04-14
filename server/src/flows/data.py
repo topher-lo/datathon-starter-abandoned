@@ -1,18 +1,19 @@
-"""Download csv file from URL, preprocess data, run linear regresion,
-and plot regression coefficients.
+"""This module contains data workflows (AKA pipeline) of data tasks from
+proprocessing, to modelling, and lastly post-processing. Data workflows in
+`streamlit-e2e-boilerplate` are orchestrated using Prefect.
 """
 
 from prefect import Flow
 from prefect import Parameter
-from ..tasks import sanitize_col_names
-from ..tasks import retrieve_data
-from ..tasks import clean_data
-from ..tasks import transform_data
-from ..tasks import encode_data
-from ..tasks import wrangle_na
-from ..tasks import gelman_standardize_data
-from ..tasks import run_model
-from ..tasks import plot_confidence_intervals
+from ..data import sanitize_col_names
+from ..data import retrieve_data
+from ..data import clean_data
+from ..data import transform_data
+from ..data import encode_data
+from ..data import wrangle_na
+from ..data import gelman_standardize_data
+from ..data import run_model
+from ..data import plot_confidence_intervals
 
 
 with Flow(name='e2e_pipeline') as e2e_pipeline:
