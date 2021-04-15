@@ -33,8 +33,18 @@ LOCAL_RESULT_DIR = config.get('prefect', 'LOCAL_RESULT_DIR')
 
 # Prefect configs
 
+# Get python requirements
+with open('./requirements/requirements-flow.txt') as f:
+    PYTHON_DEPENDENCIES = [x.strip()for x in f.readlines()]
+
 # Storage
-storage = Docker(registry_url=REGISTRY_URL)
+storage_kwargs = {
+    'dockerfile': './Dockerfile',
+    'registry_url': REGISTRY_URL,
+    'stored_as_script': True,
+    'python_dependencies': PYTHON_DEPENDENCIES,
+}
+storage = Docker(**storage_kwargs)
 
 # Executer
 executor = DaskExecutor(address=DASK_SCHEDULER_ADDR)
@@ -46,6 +56,11 @@ elif RESULT_SUBCLASS == 's3':
     result = S3Result(bucket=S3_RESULT_BUCKET)
 else:
     result = LocalResult(dir=LOCAL_RESULT_DIR)
+
+
+# Set Flow storage
+e2e_pipeline.storage = storage
+mapreduce_wordcount.storage = storage
 
 
 # Set Flow Executer
