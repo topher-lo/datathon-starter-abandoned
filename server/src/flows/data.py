@@ -5,15 +5,16 @@ proprocessing, to modelling, and lastly post-processing. Data workflows in
 
 from prefect import Flow
 from prefect import Parameter
-from ..tasks.data import sanitize_col_names
-from ..tasks.data import retrieve_data
-from ..tasks.data import clean_data
-from ..tasks.data import transform_data
-from ..tasks.data import encode_data
-from ..tasks.data import wrangle_na
-from ..tasks.data import gelman_standardize_data
-from ..tasks.data import run_model
-from ..tasks.data import plot_confidence_intervals
+
+from server.src.tasks.data import sanitize_col_names
+from server.src.tasks.data import retrieve_data
+from server.src.tasks.data import clean_data
+from server.src.tasks.data import transform_data
+from server.src.tasks.data import encode_data
+from server.src.tasks.data import wrangle_na
+from server.src.tasks.data import gelman_standardize_data
+from server.src.tasks.data import run_model
+from server.src.tasks.data import plot_confidence_intervals
 
 
 with Flow(name='e2e-pipeline') as e2e_pipeline:

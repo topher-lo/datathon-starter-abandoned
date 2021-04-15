@@ -12,11 +12,11 @@ from prefect import Parameter
 from prefect import Flow
 from prefect import flatten
 
-from ..tasks.mock import download_message
-from ..tasks.mock import split_message
-from ..tasks.mock import mapper
-from ..tasks.mock import shuffler
-from ..tasks.mock import reducer
+from server.src.tasks.mock import download_message
+from server.src.tasks.mock import split_message
+from server.src.tasks.mock import mapper
+from server.src.tasks.mock import shuffler
+from server.src.tasks.mock import reducer
 
 
 with Flow(name='mapreduce-wordcount') as mapreduce_wordcount:
