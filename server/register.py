@@ -20,16 +20,21 @@ config.read('configs/pipeline.ini')
 
 # Project name
 PROJECT_NAME = config.get('prefect', 'PROJECT_NAME')
+# URL to Docker registry to store Flow scripts
+REGISTRY_URL = config.get('prefect', 'REGISTRY_URL')
+# Dask scheduler address to be used in DaskExecutor
+DASK_SCHEDULER_ADDR = config.get('prefect', 'DASK_SCHEDULER_ADDR')
 # Configs for Result subclass
 RESULT_SUBCLASS = config.get('prefect', 'RESULT_SUBCLASS')
 AZURE_RESULT_CONTAINER = config.get('prefect', 'AZURE_RESULT_CONTAINER')
 S3_RESULT_BUCKET = config.get('prefect', 'S3_RESULT_BUCKET')
 LOCAL_RESULT_DIR = config.get('prefect', 'LOCAL_RESULT_DIR')
-# Dask scheduler address to be used in DaskExecutor
-DASK_SCHEDULER_ADDR = config.get('prefect', 'DASK_SCHEDULER_ADDR')
 
 
 # Prefect configs
+
+# Storage
+storage = Docker(registry_url=REGISTRY_URL)
 
 # Executer
 executor = DaskExecutor(address=DASK_SCHEDULER_ADDR)
