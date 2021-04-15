@@ -19,7 +19,7 @@ from ..tasks.mock import shuffler
 from ..tasks.mock import reducer
 
 
-with Flow(name='mapreduce_wordcount') as mapreduce_wordcount:
+with Flow(name='mapreduce-wordcount') as mapreduce_wordcount:
 
     url = Parameter('url', required=True)
 

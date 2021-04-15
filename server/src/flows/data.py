@@ -16,7 +16,7 @@ from ..tasks.data import run_model
 from ..tasks.data import plot_confidence_intervals
 
 
-with Flow(name='e2e_pipeline') as e2e_pipeline:
+with Flow(name='e2e-pipeline') as e2e_pipeline:
 
     # Pipeline parameters
     url = Parameter('url', required=True)
