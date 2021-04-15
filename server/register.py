@@ -3,11 +3,12 @@
 
 from configparser import ConfigParser
 
+from prefect.storage import Docker
 from prefect.executors import DaskExecutor
 
-from prefect.engine.results.azure_result import AzureResult
-from prefect.engine.results.s3_result import S3Result
-from prefect.engine.results.local_result import LocalResult
+from prefect.engine.results import AzureResult
+from prefect.engine.results import S3Result
+from prefect.engine.results import LocalResult
 
 from server.src.flows.data import e2e_pipeline
 from server.src.flows.mock import mapreduce_wordcount
@@ -17,11 +18,14 @@ from server.src.flows.mock import mapreduce_wordcount
 config = ConfigParser(allow_no_value=True)
 config.read('configs/pipeline.ini')
 
+# Project name
 PROJECT_NAME = config.get('prefect', 'PROJECT_NAME')
+# Configs for Result subclass
 RESULT_SUBCLASS = config.get('prefect', 'RESULT_SUBCLASS')
 AZURE_RESULT_CONTAINER = config.get('prefect', 'AZURE_RESULT_CONTAINER')
 S3_RESULT_BUCKET = config.get('prefect', 'S3_RESULT_BUCKET')
 LOCAL_RESULT_DIR = config.get('prefect', 'LOCAL_RESULT_DIR')
+# Dask scheduler address to be used in DaskExecutor
 DASK_SCHEDULER_ADDR = config.get('prefect', 'DASK_SCHEDULER_ADDR')
 
 
