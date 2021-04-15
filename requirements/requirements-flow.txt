@@ -1,0 +1,6 @@
+scikit-learn
+statsmodels
+dask
+numpy
+pandas
+altair
