@@ -11,6 +11,7 @@ with open("README.md") as f:
 requirements_files = [
     'requirements-server.txt',
     'requirements-client.txt',
+    'requirements-flow.txt',
 ]
 
 requirements = []
@@ -18,10 +19,13 @@ for f in requirements_files:
     with open(f"requirements/{f}") as f:
         requirements += [line for line in f.readlines()]
 
-with open("requirements/requirements-dev.txt") as f:
+with open("requirements/requirements-test.txt") as f:
     test_requirements = [line for line in f.readlines()]
 
-extras = {"dev": ["flake8"]}
+extras = {
+    "dev": ["flake8"],
+    "test": test_requirements
+}
 
 setup(
     author="Christopher Lo",
@@ -34,9 +38,6 @@ setup(
     include_package_data=True,
     keywords="datathon-mlapp-starter",
     name="datathon-mlapp-starter",
-    packages=find_packages(include=["server", "client"]),
-    test_suite="tests",
-    tests_require=test_requirements,
     url="https://github.com/topher-lo/datathon-mlapp-starter",
     version="0.0.1",
 )

@@ -65,6 +65,7 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 import itertools
+import re
 
 import statsmodels.api as sm
 
@@ -73,14 +74,25 @@ from prefect import task
 from typing import List
 from typing import Union
 from typing import Mapping
-from ..utils import clean_text
-
-from ..styles.altair import streamlit_theme
 
 from statsmodels.regression.linear_model import RegressionResultsWrapper
 from statsmodels.imputation.mice import MICEData
 from pandas.api.types import is_categorical_dtype
 from pandas.api.types import is_float_dtype
+
+from server.src.styles.altair import streamlit_theme
+
+
+# Helper functions
+
+def clean_text(text: str):
+    """Returns string:
+    1. Stripped of all whitespaces at start and end
+    2. Any excess whitespace in between are replaced with an underscore "_"
+    3. All characters are lowercased
+    """
+    clean_text = re.sub(' +', '_', text.strip()).lower()
+    return clean_text
 
 
 # Sanitize user inputted column names
