@@ -5,12 +5,14 @@ RUN apt update && apt install build-essential -y build-essential unixodbc-dev &&
 RUN apt-get update && apt-get install curl -y
 
 # set working directory
-WORKDIR /opt/server/src
+WORKDIR /opt/server
 
-# make flows and tasks directory
-RUN mkdir flows
-RUN mkdir tasks
+# make src, flows and tasks directory
+RUN mkdir src && mkdir flows && mkdir tasks
 
-# copy tasks dir and utils
-COPY server/src/tasks tasks
-COPY server/src/utils.py .
+# copy tasks directory and utils file
+COPY server/src/tasks src/tasks
+COPY server/src/utils.py src/.
+
+# append server directory to PYTHONPATH
+ENV PYTHONPATH="/opt/server:${PYTHONPATH}"
