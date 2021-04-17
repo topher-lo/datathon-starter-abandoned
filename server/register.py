@@ -23,10 +23,11 @@ from server.src.flows.mock import mapreduce_wordcount
 
 # Get configs
 config = ConfigParser(allow_no_value=True)
+config.read('setup.cfg')
 config.read('configs/pipeline.ini')
 
 # Project name
-PROJECT_NAME = config.get('prefect.default', 'PROJECT_NAME')
+PROJECT_NAME = config.get('metadata', 'name')
 # URL to Docker registry to store Flow scripts
 REGISTRY_URL = config.get('prefect.storage', 'REGISTRY_URL')
 # Dask scheduler address to be used in DaskExecutor
@@ -41,8 +42,9 @@ LOCAL_RESULT_DIR = config.get('prefect.result', 'LOCAL_RESULT_DIR')
 # FLOWS CONFIGURATION
 
 # Get python requirements
-with open('./requirements/requirements-flow.txt') as f:
-    PYTHON_DEPENDENCIES = [x.strip()for x in f.readlines()]
+PYTHON_DEPENDENCIES = [
+    line for line in config.get('options.extras_require', 'flows').splitlines()
+]
 
 # Storage
 storage_kwargs = {

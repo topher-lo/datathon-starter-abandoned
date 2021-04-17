@@ -1,3 +1,0 @@
-bokeh
-prefect
-prefect[github]
