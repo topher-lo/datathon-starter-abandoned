@@ -1,0 +1,8 @@
+-c constraints.txt
+-c server-requirements.txt
+-c flows-requirements.txt
+missingno
+pandas
+prefect
+streamlit
+streamlit-pandas-profiling
