@@ -1,0 +1,8 @@
+-c constraints.txt
+-c server-requirements.txt
+-c flows-requirements.txt
+-c client-requirements.txt
+flake8
+pytest
+pytest-cov
+great_expectations
