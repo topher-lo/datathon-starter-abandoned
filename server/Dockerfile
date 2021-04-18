@@ -7,6 +7,11 @@ RUN apt-get update && apt-get install curl -y
 # set working directory
 WORKDIR /opt/server/src
 
+# install python dependencies
+COPY requirements/flows-requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install -r flows-requirements.txt
+
 # make flows and tasks directory
 RUN mkdir flows && mkdir tasks
 

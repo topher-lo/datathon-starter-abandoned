@@ -40,17 +40,11 @@ LOCAL_RESULT_DIR = config.get('prefect.result', 'LOCAL_RESULT_DIR')
 
 # FLOWS CONFIGURATION
 
-# Get python requirements
-with open('../requirements/flows-requirements.txt') as f:
-    PYTHON_DEPENDENCIES = [line for line in f.splitlines()
-                           if not line.strip().startswith('#')]
-
 # Storage
 storage_kwargs = {
     'dockerfile': './Dockerfile',
     'registry_url': REGISTRY_URL,
     'stored_as_script': True,
-    'python_dependencies': PYTHON_DEPENDENCIES,
 }
 storage = Docker(**storage_kwargs)
 

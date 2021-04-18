@@ -51,8 +51,6 @@ decorator==5.0.7
     # via ipython
 defusedxml==0.7.1
     # via nbconvert
-deprecated==1.2.12
-    # via pygithub
 distributed==2021.4.0
     # via prefect
 docker==5.0.0
@@ -203,7 +201,7 @@ pillow==8.2.0
     # via bokeh
 pluggy==0.13.1
     # via pytest
-prefect[github]==0.14.16
+prefect==0.14.16
     # via datathon-mlapp-starter (setup.cfg)
 prometheus-client==0.10.1
     # via notebook
@@ -223,15 +221,11 @@ pycparser==2.20
     # via cffi
 pyflakes==2.3.1
     # via flake8
-pygithub==1.54.1
-    # via prefect
 pygments==2.8.1
     # via
     #   ipython
     #   jupyterlab-pygments
     #   nbconvert
-pyjwt==1.7.1
-    # via pygithub
 pyparsing==2.4.7
     # via
     #   great-expectations
@@ -280,7 +274,6 @@ requests==2.25.1
     #   docker
     #   great-expectations
     #   prefect
-    #   pygithub
 ruamel.yaml.clib==0.2.2
     # via ruamel.yaml
 ruamel.yaml==0.17.4
@@ -367,8 +360,6 @@ websocket-client==0.58.0
     # via docker
 widgetsnbextension==3.5.1
     # via ipywidgets
-wrapt==1.12.1
-    # via deprecated
 zict==2.0.0
     # via distributed
 zipp==3.4.1
