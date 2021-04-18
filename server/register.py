@@ -23,6 +23,7 @@ from server.src.flows.mock import mapreduce_wordcount
 
 # Get configs
 config = ConfigParser(allow_no_value=True)
+config.read('setup.cfg')
 config.read('configs/pipeline.ini')
 
 # Project name
