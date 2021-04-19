@@ -38,7 +38,7 @@ markupsafe==1.1.1
     # via
     #   -c requirements/server-requirements.txt
     #   jinja2
-numpy==1.19.0
+numpy==1.18.1
     # via
     #   -c requirements/constraints.txt
     #   -c requirements/server-requirements.txt

@@ -48,15 +48,16 @@ marshmallow==3.11.1
     # via
     #   marshmallow-oneofschema
     #   prefect
-msgpack==1.0.2
+msgpack==1.0.0
     # via
+    #   -c requirements/constraints.txt
     #   distributed
     #   prefect
 mypy-extensions==0.4.3
     # via prefect
 natsort==7.1.1
     # via croniter
-numpy==1.19.0
+numpy==1.18.1
     # via
     #   -c requirements/constraints.txt
     #   bokeh

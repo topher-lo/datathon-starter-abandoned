@@ -180,7 +180,7 @@ notebook==6.3.0
     # via
     #   -c requirements/client-requirements.txt
     #   widgetsnbextension
-numpy==1.19.0
+numpy==1.18.1
     # via
     #   -c requirements/client-requirements.txt
     #   -c requirements/constraints.txt

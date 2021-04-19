@@ -195,8 +195,9 @@ missingno==0.4.2
     #   pandas-profiling
 mistune==0.8.4
     # via nbconvert
-msgpack==1.0.2
+msgpack==1.0.0
     # via
+    #   -c requirements/constraints.txt
     #   -c requirements/server-requirements.txt
     #   distributed
     #   prefect
@@ -224,7 +225,7 @@ networkx==2.5.1
     # via visions
 notebook==6.3.0
     # via widgetsnbextension
-numpy==1.19.0
+numpy==1.18.1
     # via
     #   -c requirements/constraints.txt
     #   -c requirements/flows-requirements.txt
