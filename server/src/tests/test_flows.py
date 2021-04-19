@@ -40,6 +40,7 @@ def test_mapreduce_wordcount():
     # Get top 3 tokens
     result_top_tokens = sorted(result, key=lambda x: x[1])[-3:]
     expected_top_tokens = [('a', 4), ('and', 4), ('the', 5)]
+    assert state.is_successful()
     assert result_top_tokens == expected_top_tokens
 
 

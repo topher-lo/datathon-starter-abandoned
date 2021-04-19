@@ -65,8 +65,8 @@ def create_prefect_flow_run(flow_name: str,
                                 if ref_str in task_run.task_slug), None)
                     if ref:
                         task_id = task_run.id
-                        state = client.get_task_run_state(task_id)
-                        task_res_locs[ref] = state._result.location
+                        task_state = client.get_task_run_state(task_id)
+                        task_res_locs[ref] = task_state._result.location
                 task_results = {}
                 for ref, loc in task_res_locs.items():
                     local_res = LocalResult()
