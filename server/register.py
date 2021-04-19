@@ -42,12 +42,12 @@ LOCAL_RESULT_DIR = config.get('prefect.result', 'LOCAL_RESULT_DIR')
 # FLOWS CONFIGURATION
 
 # Storage
+FLOWS_DIR_PATH = '/opt/server/src/flows'
 storage_kwargs = {
-    'dockerfile': './Dockerfile',
+    'dockerfile': 'server/Dockerfile',
     'registry_url': REGISTRY_URL,
     'stored_as_script': True,
 }
-storage = Docker(**storage_kwargs)
 
 # Executer
 dask_executor = DaskExecutor(address=DASK_SCHEDULER_ADDR)
@@ -63,8 +63,14 @@ else:
 
 
 # Set flow storage
-e2e_pipeline.storage = storage
-mapreduce_wordcount.storage = storage
+e2e_pipeline.storage = Docker(
+    path=f'{FLOWS_DIR_PATH}/data.py',
+    **storage_kwargs
+)
+mapreduce_wordcount.storage = Docker(
+    path=f'{FLOWS_DIR_PATH}/mock.py',
+    **storage_kwargs
+)
 
 
 # Set flow executer

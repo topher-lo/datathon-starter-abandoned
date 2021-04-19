@@ -12,12 +12,13 @@ COPY requirements/flows-requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install -r flows-requirements.txt
 
-# make flows and tasks directory
-RUN mkdir flows && mkdir tasks
+# make flows, tasks, and styles directory
+RUN mkdir flows && mkdir tasks && mkdir styles
 
-# copy tasks directory and utils file
+# copy flows and tasks directory
+COPY server/src/flows flows
 COPY server/src/tasks tasks
-COPY server/src/utils.py .
+COPY server/src/styles styles
 
 # append opt directory to PYTHONPATH
 ENV PYTHONPATH="/opt:${PYTHONPATH}"
