@@ -1,4 +1,6 @@
 -c constraints.txt
 bokeh
 dask
+kubernetes
 prefect
+prefect[kubernetes]

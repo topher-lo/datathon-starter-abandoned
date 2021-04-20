@@ -7,6 +7,7 @@ from configparser import ConfigParser
 from typing import List
 from prefect import Flow
 
+from prefect.run_configs import KubernetesRun
 from prefect.storage import Docker
 from prefect.executors import DaskExecutor
 from prefect.executors import LocalExecutor
@@ -41,6 +42,9 @@ LOCAL_RESULT_DIR = config.get('prefect.result', 'LOCAL_RESULT_DIR')
 
 # FLOWS CONFIGURATION
 
+# Run config
+run_config = KubernetesRun()
+
 # Storage
 FLOWS_DIR_PATH = '/opt/server/src/flows'
 storage_kwargs = {
@@ -50,8 +54,8 @@ storage_kwargs = {
 }
 
 # Executer
-dask_executor = DaskExecutor(address=DASK_SCHEDULER_ADDR)
 local_executor = LocalExecutor()
+dask_executor = DaskExecutor(address=DASK_SCHEDULER_ADDR)
 
 # Result
 if RESULT_SUBCLASS == 'azure':
@@ -60,6 +64,11 @@ elif RESULT_SUBCLASS == 's3':
     result = S3Result(bucket=S3_RESULT_BUCKET)
 else:
     result = LocalResult(dir=LOCAL_RESULT_DIR)
+
+
+# Set flow run configs
+e2e_pipeline.run_config = run_config
+mapreduce_wordcount.run_config = run_config
 
 
 # Set flow storage
@@ -73,7 +82,7 @@ mapreduce_wordcount.storage = Docker(
 )
 
 
-# Set flow executer
+# Set flow executor
 e2e_pipeline.executor = local_executor
 mapreduce_wordcount.executor = dask_executor
 
@@ -95,6 +104,10 @@ def build_flows(flows: List[Flow],
                 project_name: str = PROJECT_NAME):
     for flow in flows:
         logging.info(flow.name)
+        logging.info(flow.run_config)
+        logging.info(flow.storage)
+        logging.info(flow.executor)
+        logging.info(flow.result)
         flow.validate()
         flow.register(project_name=project_name,
                       idempotency_key=flow.serialized_hash())
