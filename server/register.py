@@ -7,6 +7,7 @@ from configparser import ConfigParser
 from typing import List
 from prefect import Flow
 
+from prefect.run_configs import KubernetesRun
 from prefect.storage import Docker
 from prefect.executors import DaskExecutor
 from prefect.executors import LocalExecutor
@@ -15,7 +16,6 @@ from prefect.engine.results import AzureResult
 from prefect.engine.results import S3Result
 from prefect.engine.results import LocalResult
 
-from server.src.flows.data import e2e_pipeline
 from server.src.flows.mock import mapreduce_wordcount
 
 
@@ -41,17 +41,20 @@ LOCAL_RESULT_DIR = config.get('prefect.result', 'LOCAL_RESULT_DIR')
 
 # FLOWS CONFIGURATION
 
+# Run config
+run_config = KubernetesRun()
+
 # Storage
+FLOWS_DIR_PATH = '/opt/server/src/flows'
 storage_kwargs = {
-    'dockerfile': './Dockerfile',
+    'dockerfile': 'server/Dockerfile',
     'registry_url': REGISTRY_URL,
     'stored_as_script': True,
 }
-storage = Docker(**storage_kwargs)
 
 # Executer
-dask_executor = DaskExecutor(address=DASK_SCHEDULER_ADDR)
 local_executor = LocalExecutor()
+dask_executor = DaskExecutor(address=DASK_SCHEDULER_ADDR)
 
 # Result
 if RESULT_SUBCLASS == 'azure':
@@ -62,24 +65,27 @@ else:
     result = LocalResult(dir=LOCAL_RESULT_DIR)
 
 
+# Set flow run configs
+mapreduce_wordcount.run_config = run_config
+
+
 # Set flow storage
-e2e_pipeline.storage = storage
-mapreduce_wordcount.storage = storage
+mapreduce_wordcount.storage = Docker(
+    path=f'{FLOWS_DIR_PATH}/mock.py',
+    **storage_kwargs
+)
 
 
-# Set flow executer
-e2e_pipeline.executor = local_executor
+# Set flow executor
 mapreduce_wordcount.executor = dask_executor
 
 
 # Set flow result
-e2e_pipeline.result = result
 mapreduce_wordcount.result = result
 
 
 # Declare flows
 FLOWS = [
-    e2e_pipeline,
     mapreduce_wordcount
 ]
 
@@ -89,6 +95,10 @@ def build_flows(flows: List[Flow],
                 project_name: str = PROJECT_NAME):
     for flow in flows:
         logging.info(flow.name)
+        logging.info(flow.run_config)
+        logging.info(flow.storage)
+        logging.info(flow.executor)
+        logging.info(flow.result)
         flow.validate()
         flow.register(project_name=project_name,
                       idempotency_key=flow.serialized_hash())

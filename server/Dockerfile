@@ -15,9 +15,9 @@ RUN pip install -r flows-requirements.txt
 # make flows and tasks directory
 RUN mkdir flows && mkdir tasks
 
-# copy tasks directory and utils file
+# copy flows and tasks directory
+COPY server/src/flows flows
 COPY server/src/tasks tasks
-COPY server/src/utils.py .
 
 # append opt directory to PYTHONPATH
 ENV PYTHONPATH="/opt:${PYTHONPATH}"

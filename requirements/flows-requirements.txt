@@ -4,10 +4,14 @@
 #
 #    pip-compile requirements/flows-requirements.in
 #
-altair==4.1.0
-    # via -r requirements/flows-requirements.in
-attrs==20.3.0
-    # via jsonschema
+certifi==2020.12.5
+    # via
+    #   -c requirements/server-requirements.txt
+    #   requests
+chardet==4.0.0
+    # via
+    #   -c requirements/server-requirements.txt
+    #   requests
 cloudpickle==1.6.0
     # via
     #   -c requirements/server-requirements.txt
@@ -16,86 +20,36 @@ dask==2021.4.0
     # via
     #   -c requirements/server-requirements.txt
     #   -r requirements/flows-requirements.in
-entrypoints==0.3
-    # via altair
 fsspec==2021.4.0
     # via
     #   -c requirements/server-requirements.txt
     #   dask
-jinja2==2.11.3
+idna==2.10
     # via
     #   -c requirements/server-requirements.txt
-    #   altair
-joblib==1.0.1
-    # via scikit-learn
-jsonschema==3.2.0
-    # via altair
+    #   requests
 locket==0.2.1
     # via
     #   -c requirements/server-requirements.txt
     #   partd
-markupsafe==1.1.1
-    # via
-    #   -c requirements/server-requirements.txt
-    #   jinja2
-numpy==1.19.0
-    # via
-    #   -c requirements/constraints.txt
-    #   -c requirements/server-requirements.txt
-    #   -r requirements/flows-requirements.in
-    #   altair
-    #   pandas
-    #   patsy
-    #   scikit-learn
-    #   scipy
-    #   statsmodels
-pandas==1.2.4
-    # via
-    #   -r requirements/flows-requirements.in
-    #   altair
-    #   statsmodels
 partd==1.2.0
     # via
     #   -c requirements/server-requirements.txt
     #   dask
-patsy==0.5.1
-    # via statsmodels
-pyrsistent==0.17.3
-    # via jsonschema
-python-dateutil==2.8.1
-    # via
-    #   -c requirements/server-requirements.txt
-    #   pandas
-pytz==2021.1
-    # via
-    #   -c requirements/server-requirements.txt
-    #   pandas
 pyyaml==5.4.1
     # via
     #   -c requirements/server-requirements.txt
     #   dask
-scikit-learn==0.24.1
-    # via -r requirements/flows-requirements.in
-scipy==1.6.2
-    # via
-    #   scikit-learn
-    #   statsmodels
-six==1.15.0
+requests==2.25.1
     # via
     #   -c requirements/server-requirements.txt
-    #   jsonschema
-    #   patsy
-    #   python-dateutil
-statsmodels==0.12.2
-    # via -r requirements/flows-requirements.in
-threadpoolctl==2.1.0
-    # via scikit-learn
+    #   -r requirements/flows-requirements.in
 toolz==0.11.1
     # via
     #   -c requirements/server-requirements.txt
-    #   altair
     #   dask
     #   partd
-
-# The following packages are considered to be unsafe in a requirements file:
-# setuptools
+urllib3==1.26.4
+    # via
+    #   -c requirements/server-requirements.txt
+    #   requests

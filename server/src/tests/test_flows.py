@@ -1,26 +1,9 @@
 import pytest
 
-from server.src.flows.data import e2e_pipeline
 from server.src.flows.mock import mapreduce_wordcount
 
 from server.register import DASK_SCHEDULER_ADDR
-from prefect.executors import LocalExecutor
 from prefect.executors import DaskExecutor
-
-
-def test_e2e_pipeline():
-    """Smoke test. Flow successfully executes using a local executor.
-    """
-
-    kwargs = {
-        'url': 'https://vincentarelbundock.github.io/Rdatasets/csv/stevedata/fakeTSD.csv',
-        'cat_cols': ['year'],
-        'endog': 'y',
-        'exog': ['x1', 'x2']
-    }
-
-    state = e2e_pipeline.run(**kwargs, executor=LocalExecutor())
-    assert state.is_successful()
 
 
 @pytest.mark.dasktest
@@ -35,11 +18,12 @@ def test_mapreduce_wordcount():
            'installations/ci-poetry/supercollider_src/poet10/poem.txt')
     executor = DaskExecutor(address=DASK_SCHEDULER_ADDR)
     state = mapreduce_wordcount.run(url=url, executor=executor)
-    task_ref = mapreduce_wordcount.get_tasks('reducer')
+    task_ref = mapreduce_wordcount.get_tasks('reducer')[0]
     result = state.result[task_ref].result
     # Get top 3 tokens
-    result_top_tokens = sorted(result, key=lambda x: x[1])[:3]
-    expected_top_tokens = [('a', 4), ('and', 4), ('an', 1)]
+    result_top_tokens = sorted(result, key=lambda x: x[1])[-3:]
+    expected_top_tokens = [('a', 4), ('and', 4), ('the', 5)]
+    assert state.is_successful()
     assert result_top_tokens == expected_top_tokens
 
 
