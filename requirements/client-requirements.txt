@@ -6,6 +6,7 @@
 #
 aiohttp==3.7.4.post0
     # via
+    #   -c requirements/constraints.txt
     #   -c requirements/server-requirements.txt
     #   kubernetes-asyncio
 altair==4.1.0
@@ -273,7 +274,7 @@ pillow==8.2.0
     # via
     #   -c requirements/server-requirements.txt
     #   streamlit
-prefect==0.14.16
+prefect[kubernetes]==0.14.16
     # via
     #   -c requirements/server-requirements.txt
     #   -r requirements/client-requirements.in
