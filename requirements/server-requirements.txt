@@ -183,8 +183,9 @@ typing-extensions==3.7.4.3
     # via
     #   aiohttp
     #   bokeh
-urllib3==1.26.4
+urllib3==1.26.5
     # via
+    #   -c requirements/constraints.txt
     #   kubernetes
     #   kubernetes-asyncio
     #   prefect
