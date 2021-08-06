@@ -1,3 +1,15 @@
+# Status (August 6th 2021)
+- 1st attempt at creating a boilerplate for data applications using Prefect and Streamlit
+- I am abandoning this project and starting a new boilerplate (topher-lo/datathon-starter)
+- IMO this boilerplate requires an inconvenient number of DevOps steps for the average data analyst to get started:
+  - The user should be able to start writing and testing flows w/o setting up a local Prefect agent and Dask cluster
+  - The `flow.run()` paradigm should be used for the testing, prototyping, and possibly even during beta (using agentless flows and/or `flow.run_agent()`)
+
+### My goals for the new boilerplate:
+1. CI/CD pipeline for registering Prefect flows and deploying a Streamlit app
+2. Uses a managed Dask provider (e.g. Coiled, Saturn Cloud) to create short-lived clusters
+3. Streamlined Python environment management
+
 # Datathon Starter
 
 ## Prerequisites
