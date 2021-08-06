@@ -30,17 +30,17 @@ Setting-up a local development environment requires:
 The easiest way to get started is to clone the repository:
 ```bash
 # Get the latest codebase
-git clone git@github.com:topher-lo/datathon-mlapp-starter.git
-cd datathon-mlapp-starter
+git clone git@github.com:topher-lo/datathon-starter.git
+cd datathon-starter
 
 # Create and activate a new Conda environment for Python 3.8.0
-conda create -n datathon-mlapp-starter python=3.8.0
-conda activate datathon-mlapp-starter
+conda create -n datathon-starter python=3.8.0
+conda activate datathon-starter
 
-# Use pip to install datathon-mlapp-starter in editable mode
+# Use pip to install datathon-starter in editable mode
 pip install -e .
 
-# Run a Shell script to install datathon-mlapp-starter's dependencies
+# Run a Shell script to install datathon-starter's dependencies
 ./installdeps.sh  # or
 sh installdeps.sh  # or
 bash installdeps.sh

@@ -1,5 +1,5 @@
 """Runs the streamlit app.
-Call this file in the terminal (from the `datathon-mlapp-starter` dir)
+Call this file in the terminal (from the `datathon-starter` dir)
 via `streamlit run app.py`.
 """
 
@@ -164,7 +164,7 @@ def main():
     """
 
     # Configures the default settings
-    st.set_page_config(page_title='datathon-mlapp-starter',
+    st.set_page_config(page_title='datathon-starter',
                        page_icon='🛠️',
                        layout='wide')
 
@@ -232,7 +232,7 @@ def main():
             st.warning('Please select an endogenous variable')
             st.stop()
         flow_name = 'e2e_pipeline'
-        project_name = 'datathon-mlapp-starter'
+        project_name = 'datathon-starter'
         task_refs = ['wrangle_na']
         params = {'url': params.get('url'),
                   'sep': params.get('sep'),

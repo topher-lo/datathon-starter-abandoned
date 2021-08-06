@@ -10,7 +10,7 @@ from client.app import create_prefect_flow_run
 @pytest.mark.apitest
 def test_create_prefect_flow_run():
     flow_name = 'mapreduce-wordcount'
-    project_name = 'datathon-mlapp-starter'
+    project_name = 'datathon-starter'
     task_refs = ['reducer']
 
     url = ('https://raw.githubusercontent.com/KTH/ci-hackathon/master/'
